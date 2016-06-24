@@ -1,0 +1,82 @@
+
+<div layout="row">
+  <md-button ng-click="toggleLeft()"
+    hide-gt-md>
+    View Columns
+  </md-button>
+  <md-button ng-click="toggleRight()"
+    ng-hide="isOpenRight()">
+    Toggle right
+  </md-button>    
+  <md-button>Item 2</md-button>
+  <md-menu>
+    <md-button md-menu-origin ng-click="$mdOpenMenu()">Help</md-button>
+    <md-menu-content width="2">
+      <md-menu-item>
+        <md-button>Help</md-button>
+      </md-menu-item>
+      <md-menu-item>
+        <md-button>About</md-button>
+      </md-menu-item>
+    </md-menu-content>
+  </md-menu>
+</div>
+
+<div ng-controller="View1Ctrl" layout layout="column" ng-cloak flex>
+  <section layout="row" flex>
+    <md-sidenav
+        class="md-sidenav-left"
+        md-component-id="left"
+        md-is-locked-open="$mdMedia('gt-md')"
+        md-disable-backdrop
+        md-whiteframe="4">
+      <md-toolbar class="md-theme-indigo">
+        <h1 class="md-toolbar-tools">Sidenav Left</h1>
+      </md-toolbar>
+      <md-content layout-padding ng-controller="LeftCtrl">
+        <md-button ng-click="close()" class="md-primary" hide-gt-md>
+          Close Sidenav Left
+        </md-button>
+        <p hide show-gt-md>
+          This sidenav is locked open on your device. To go back to the default behavior,
+          narrow your display.
+        </p>
+        <md-list-item ng-repeat="column in columns" ng-click="switchView(column.name);close()"> 
+          <p>{{column.name}}</p>
+        </md-list-item>
+      </md-content>
+    </md-sidenav>
+
+    <md-content flex layout-padding>
+      <div layout="column" layout-fill layout-align="top center">
+        <div layout="row" ng-cloak>
+          <column-data 
+              layout="column"
+              ng-repeat="column in columns" 
+              ng-show="whichActive==column.name"
+              column='column'>
+          </column-data>
+        </div>
+      </div>
+      <div flex></div>
+    </md-content>
+
+    <md-sidenav class="md-sidenav-right md-whiteframe-4dp" md-component-id="right">
+      <md-toolbar class="md-theme-light">
+        <h1 class="md-toolbar-tools">Sidenav Right</h1>
+      </md-toolbar>
+      <md-content ng-controller="RightCtrl" layout-padding>
+        <form>
+          <md-input-container>
+            <label for="testInput">Test input</label>
+            <input type="text" id="testInput"
+                   ng-model="data" md-autofocus>
+          </md-input-container>
+        </form>
+        <md-button ng-click="close()" class="md-primary">
+          Close Sidenav Right
+        </md-button>
+      </md-content>
+    </md-sidenav>
+  </section>
+</div>

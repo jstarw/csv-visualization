@@ -1,0 +1,39 @@
+
+<md-whiteframe class="md-whiteframe-1dp" flex-sm="100" flex-gt-sm="100" flex-gt-md="100">
+  <md-toolbar>
+    <div class="md-toolbar-tools">
+      <h2>Column: {{column.name}}</h2>
+    </div>
+  </md-toolbar>
+
+  <bar-graph column="column"></bar-graph>
+
+  <md-list>
+    <md-subheader class="md-no-sticky">Single Action Checkboxes</md-subheader>
+    <md-list-item>
+      <p>Should this column be included?</p>
+      <md-checkbox class="md-secondary" ng-model="isIncluded"></md-checkbox>
+    </md-list-item>
+    <md-divider ng-hide="!isIncluded"></md-divider>
+
+    <md-list-item ng-hide="!isIncluded">
+      <p>Should we categorize the data into bins?</p>
+      <md-checkbox class="md-secondary" ng-model="isCategorized"></md-checkbox>
+    </md-list-item>
+    <md-divider ng-hide="!isCategorized"></md-divider>
+
+    <md-list-item ng-hide="!isCategorized">
+      <p>Number of categories</p>
+    </md-list-item>
+    <md-list-item ng-hide="!isCategorized">
+      <md-slider flex md-discrete min="0" max="10" ng-model="categories" aria-label="red"></md-slider>
+    </md-list-item>
+    <md-divider ng-hide="!categories"></md-divider>
+
+    <md-list-item ng-hide="!categories">
+      <p>Evenly distributed?</p>
+      <md-checkbox class="md-secondary" ng-model="isEvenlyDistributed"></md-checkbox>
+    </md-list-item>
+    <md-divider ng-hide="!categories"></md-divider>
+  </md-list>
+</md-whiteframe>

@@ -1,0 +1,24 @@
+/* D3 Styles */
+
+.chart {
+  font: 10px sans-serif;
+}
+
+.chart rect {
+  fill: steelblue;
+}
+
+.chart text {
+  text-anchor: middle;
+}
+
+.axis path, .axis line {
+  fill: none;
+  stroke: #000;
+  shape-rendering: crispEdges;
+}
+
+.bin-line {
+  stroke: black;
+  stroke-width: 2px;
+}

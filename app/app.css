@@ -4,6 +4,11 @@
   font: 10px sans-serif;
 }
 
+.chart g.bin-bar rect {
+  opacity: 0.5;
+  fill: mediumturquoise;
+}
+
 .chart rect {
   fill: steelblue;
 }

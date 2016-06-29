@@ -22,12 +22,17 @@ var columnData = view1Ctrl.directive('columnData', ['d3Service', function(d3Serv
       if (newVal==null || newVal=='') {
         scope.isEvenlyDistributed = true;
         scope.$broadcast('remove_histogram');
-      } else scope.$broadcast('bin_number_changed', newVal);
+      } else {
+        scope.$broadcast('bin_number_changed', newVal);
+        scope.isEvenlyDistributed = true;
+      }
     });
     scope.$watch('isEvenlyDistributed', function(newVal) {
       if (newVal==false && scope.categories) {
         scope.$broadcast('add_draggable');
-      } 
+      } else {
+        scope.$broadcast('remove_draggable');
+      }
     });
   }
   return {

@@ -9,6 +9,12 @@
   fill: mediumturquoise;
 }
 
+.chart g.bin-bar rect.drag-left,
+.chart g.bin-bar rect.drag-right {
+  opacity: 0.5;
+  fill: yellow;
+}
+
 .chart rect {
   fill: steelblue;
 }

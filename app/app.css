@@ -4,23 +4,46 @@
   font: 10px sans-serif;
 }
 
-.chart g.bin-bar rect {
+svg g.bin-bar rect {
   opacity: 0.5;
   fill: mediumturquoise;
 }
 
-.chart g.bin-bar rect.drag-left,
-.chart g.bin-bar rect.drag-right {
+svg g.bin-bar rect:hover {
+  opacity: 0.5;
+  fill: orangered;
+}
+
+svg g.bin-bar rect.drag-left,
+svg g.bin-bar rect.drag-right {
   opacity: 0.5;
   fill: yellow;
 }
 
-.chart rect {
+svg rect {
   fill: steelblue;
 }
 
-.chart text {
+svg rect:hover {
+  fill: orangered;
+}
+
+svg text {
   text-anchor: middle;
+}
+
+svg .bin-limits .drag {
+  stroke: darkgrey;
+  opacity: 0;
+}
+
+svg .bin-limits .drag:hover {
+  opacity: 0.25;
+}
+
+svg .bin-limits .line {
+  stroke: blue;
+  stroke-dasharray: 3,3;
 }
 
 .axis path, .axis line {
@@ -32,4 +55,62 @@
 .bin-line {
   stroke: black;
   stroke-width: 2px;
+}
+
+/* TOOLTIP STYLE */ 
+.d3-tip {
+  line-height: 1;
+  font-size: 12px;
+  font-weight: bold;
+  padding: 12px;
+  background: rgba(0, 0, 0, 0.8);
+  color: #fff;
+  border-radius: 2px;
+  pointer-events: none;
+}
+
+/* Creates a small triangle extender for the tooltip */
+.d3-tip:after {
+  box-sizing: border-box;
+  display: inline;
+  font-size: 10px;
+  width: 100%;
+  line-height: 1;
+  color: rgba(0, 0, 0, 0.8);
+  position: absolute;
+  pointer-events: none;
+}
+
+/* Northward tooltips */
+.d3-tip.n:after {
+  content: "\25BC";
+  margin: -1px 0 0 0;
+  top: 100%;
+  left: 0;
+  text-align: center;
+}
+
+/* Eastward tooltips */
+.d3-tip.e:after {
+  content: "\25C0";
+  margin: -4px 0 0 0;
+  top: 50%;
+  left: -8px;
+}
+
+/* Southward tooltips */
+.d3-tip.s:after {
+  content: "\25B2";
+  margin: 0 0 1px 0;
+  top: -8px;
+  left: 0;
+  text-align: center;
+}
+
+/* Westward tooltips */
+.d3-tip.w:after {
+  content: "\25B6";
+  margin: -4px 0 0 -1px;
+  top: 50%;
+  left: 100%;
 }

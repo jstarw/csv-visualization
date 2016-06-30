@@ -78,7 +78,11 @@ var barGraph = view1Ctrl.directive('barGraph', ['d3Service', function(d3Service)
             .orient('left')
             .ticks(10);
 
-          // var tooltip = d3.tip().attr('class', 'd3-tip').html(function(d) {return d.value});
+          var tooltip = d3.tip().attr('class', 'd3-tip')
+            .offset([-10, 0])
+            .html(function(d) {
+              return "<div>Name: " + d.name + "</div><div>Value: " + d.value + "</div>";
+            });
           // appends data from chartData to svg element
           var bar = chart.selectAll('g')
             .data(chartData)
@@ -87,10 +91,10 @@ var barGraph = view1Ctrl.directive('barGraph', ['d3Service', function(d3Service)
             .attr('x', function(d, i) { return i * barWidth; })
             .attr('height', function(d) { return height - y(d.value); })
             .attr('width', barWidth - 1)
-            .attr('title', function(d) { return 'Value: ' + d.value; });
-            // .call(tooltip)
-            // .on('mouseover', tip.show)
-            // .on('mouseout', tip.hide);
+            .attr('title', function(d) { return 'Value: ' + d.value; })
+            .call(tooltip)
+            .on('mouseover', tooltip.show)
+            .on('mouseout', tooltip.hide);
 
           // add y axis
           chart.append('g')
@@ -142,14 +146,21 @@ var barGraph = view1Ctrl.directive('barGraph', ['d3Service', function(d3Service)
             .domain([0, d3.max(hist, function(d) { return d.y; })])
             .range([height, 0]);
 
-          var tooltip = d3.tip().attr('class', 'd3-tip').html(function(d) {return d});
+          var tooltip = d3.tip().attr('class', 'd3-tip')
+            .offset([-10, 0])
+            .html(function(d) {
+              return  "<div>Range: " + d.range + "</div>" + 
+                      "<div>Total Count: " + d.freq + "</div>";
+            });
 
           var histData = hist.map(function(d) {
             return {
               x: barWidth*reverseKeys[d.x],
               y: y1(d.y),
               width: barWidth*(reverseKeys[d.x + d.dx] - reverseKeys[d.x])-1,
-              height: height - y1(d.y)
+              height: height - y1(d.y),
+              freq: d.y,
+              range:[d.x,d.x+d.dx]
             }
           });
           console.log(histData);
@@ -163,10 +174,17 @@ var barGraph = view1Ctrl.directive('barGraph', ['d3Service', function(d3Service)
             .insert('g', ':first-child')
               .attr('class', 'bin-bar')
               .append('rect')
-              .attr('y', function(d) { return d.y; })
+              .attr('y', height)
               .attr('x', function(d) { return d.x; })
-              .attr('width', function(d, i) { return d.width; })
-              .attr('height', function(d) {return d.height; });
+              .attr('width', function(d) { return d.width; })
+              .attr('height', 0)
+              .call(tooltip)
+              .on('mouseover', tooltip.show)
+              .on('mouseout', tooltip.hide)
+              .transition()
+                .duration(1000)
+                .attr('y', function (d) { return d.y; })
+                .attr('height', function(d) { return d.height; })
 
           var yAxis = d3.svg.axis()
             .scale(y1)
@@ -220,8 +238,6 @@ var barGraph = view1Ctrl.directive('barGraph', ['d3Service', function(d3Service)
           // blue line
           dragLineGroup.append("line")
             .attr("class", "line")
-            .style("stroke", "blue")
-            .style("stroke-dasharray", "3,3")
             .attr("y1", 0)
             .attr("y2", height)
             .attr("x1", function(d) { return d.x })
@@ -230,8 +246,6 @@ var barGraph = view1Ctrl.directive('barGraph', ['d3Service', function(d3Service)
           // transparent line, makes it easier to click 
           dragLineGroup.append("line")
             .attr("class", "drag")
-            .style("stroke", "grey")
-            .style("opacity", 0)
             .style("stroke-width", barWidth)
             .attr("y1", 0)
             .attr("y2", height)

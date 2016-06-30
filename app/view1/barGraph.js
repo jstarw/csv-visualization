@@ -37,6 +37,7 @@ var barGraph = view1Ctrl.directive('barGraph', ['d3Service', function(d3Service)
           .attr('height', options.height)
           .append('g')
             .attr('transform', 'translate(' + options.margin_left + ',' + options.margin_top + ')');
+
         var histogramChart = d3.select(selectorHist)
           .attr('width', 0)
           .attr('height', 0)
@@ -44,6 +45,12 @@ var barGraph = view1Ctrl.directive('barGraph', ['d3Service', function(d3Service)
             .attr('transform', 'translate(' + options.margin_left + ',' + options.margin_top + ')');;
 
         var chartData = groupData(scope.column.values);
+        var keys = chartData.map(function(x) {return +x.name}).sort(function(a, b){return a-b});
+        var reverseKeys = {};
+        for (var i=0; i<keys.length; i++) {
+          if (i==keys.length-1) reverseKeys[keys[i]] = i+1; // must include last element
+          else reverseKeys[keys[i]] = i;
+        }
 
         // set the width and height based off options given
         var width  = options.width  - options.margin_left - options.margin_right,
@@ -71,6 +78,7 @@ var barGraph = view1Ctrl.directive('barGraph', ['d3Service', function(d3Service)
             .orient('left')
             .ticks(10);
 
+          // var tooltip = d3.tip().attr('class', 'd3-tip').html(function(d) {return d.value});
           // appends data from chartData to svg element
           var bar = chart.selectAll('g')
             .data(chartData)
@@ -80,6 +88,9 @@ var barGraph = view1Ctrl.directive('barGraph', ['d3Service', function(d3Service)
             .attr('height', function(d) { return height - y(d.value); })
             .attr('width', barWidth - 1)
             .attr('title', function(d) { return 'Value: ' + d.value; });
+            // .call(tooltip)
+            // .on('mouseover', tip.show)
+            // .on('mouseout', tip.hide);
 
           // add y axis
           chart.append('g')
@@ -109,31 +120,29 @@ var barGraph = view1Ctrl.directive('barGraph', ['d3Service', function(d3Service)
           }
         }
 
-        scope.histogram = function(chartData, groupedData, bins) {
-          scope.removeHistogram();
-          var binSize = groupedData.length / bins;
-          var keys = groupedData.map(function(x) {return +x.name}).sort(function(a, b){return a-b});
-          var reverseKeys = {};
-          for (var i=0; i<keys.length; i++) {
-            if (i==keys.length-1) reverseKeys[keys[i]] = i+1; // must include last element
-            else reverseKeys[keys[i]] = i;
-          }
-          console.log(keys, reverseKeys);
+        scope.createHistogramEvenly = function(bins) {
+          var binSize = chartData.length / bins;
           var binThresholds = [];
           for (var i=0; i<bins; i++) {
-            binThresholds.push(keys[Math.round(i*binSize)]);
+            binThresholds.push(keys[Math.round(i*binSize)]  );
           }
           binThresholds.push(keys[keys.length-1]);
-          console.log(binThresholds);
 
+          scope.createHistogram(scope.column.values, binThresholds);
+        }
+
+        scope.createHistogram = function(values, binThresholds) {
+          scope.removeHistogram();
           var hist = d3.layout.histogram()
             .bins(binThresholds)
-            (chartData);
+            (values);
           console.log(hist);
 
           var y1 = d3.scale.linear()
             .domain([0, d3.max(hist, function(d) { return d.y; })])
             .range([height, 0]);
+
+          var tooltip = d3.tip().attr('class', 'd3-tip').html(function(d) {return d});
 
           var histData = hist.map(function(d) {
             return {
@@ -150,7 +159,7 @@ var barGraph = view1Ctrl.directive('barGraph', ['d3Service', function(d3Service)
             .attr('height', options.height);
 
           var bars = histogramChart.selectAll('rect')
-            .data(histData, function(d,i) {return 'hist-'+d.y+'-'+i;}).enter()
+            .data(histData).enter()
             .insert('g', ':first-child')
               .attr('class', 'bin-bar')
               .append('rect')
@@ -164,9 +173,14 @@ var barGraph = view1Ctrl.directive('barGraph', ['d3Service', function(d3Service)
             .orient('left')
             .ticks(10);
 
+          var xAxis = d3.svg.axis()
+            .scale(x)
+            .orient('bottom')
+            .ticks(histData.length)
+
           // add y axis
           histogramChart.append('g')
-            .attr('class', 'y axis right')
+            .attr('class', 'y axis')
             .call(yAxis)
             .append('text')
             .attr('transform', 'rotate(-90)')
@@ -174,43 +188,51 @@ var barGraph = view1Ctrl.directive('barGraph', ['d3Service', function(d3Service)
             .attr('x', 10)
             .style('text-anchor', 'end')
             .text('value Value');
+
+          histogramChart.append('g')
+            .attr('class', 'x axis')
+            .attr('transform', 'translate(0,' + height + ')')
+            .call(xAxis)
+            .append('text')
         }
 
         scope.removeHistogram = function() {
           histogramChart.selectAll('.bin-bar').remove();
-          histogramChart.selectAll('.y.axis.right').remove();
+          histogramChart.selectAll('.line').remove();
+          histogramChart.selectAll('.y.axis').remove();
+          histogramChart.selectAll('.x.axis').remove();
           d3.select(selectorHist)
             .attr('width', 0)
             .attr('height', 0);
         }
 
         scope.addDraggable = function() {
-          var dragbarw = 10;
-
           var drag = d3.behavior.drag()
             .origin(Object)
-            .on("drag", dragMove);
-            // .on("dragend" updateHistogram);
-
-          var dragRight = d3.behavior.drag()
-            .origin(Object)
-            .on("drag", rdragresize)
-            .on("dragend", function(d) {
-              var newWidth = d3.select(this.previousSibling.previousSibling).attr('width');
-              d.width = +newWidth;
-            });
-
-          var dragLeft = d3.behavior.drag()
-            .origin(Object)
-            .on("drag", ldragresize);            
-
-          // chart.selectAll('.bin-bar').call(drag);
-
-          var dragLine = chart.selectAll('.bin-bar')
-            .append("line")
-            .attr("class", "drag")
+            .on("drag", dragMove)
+            .on("dragend", updateHistogram);
+          var data = histogramChart.selectAll('.bin-bar').data();
+          data = data.slice(0,data.length-1); //remove first elem so extra line doesnt appear
+          var dragLineGroup = chart.append("g")
+            .attr("class", "bin-limits")
+            .selectAll("line").data(data).enter()
+            .append("g");
+          // blue line
+          dragLineGroup.append("line")
+            .attr("class", "line")
             .style("stroke", "blue")
-            .style("stroke-width", 2)
+            .style("stroke-dasharray", "3,3")
+            .attr("y1", 0)
+            .attr("y2", height)
+            .attr("x1", function(d) { return d.x })
+            .attr("x2", function(d) { return d.x })
+            .attr("cursor", "ew-resize");
+          // transparent line, makes it easier to click 
+          dragLineGroup.append("line")
+            .attr("class", "drag")
+            .style("stroke", "grey")
+            .style("opacity", 0)
+            .style("stroke-width", barWidth)
             .attr("y1", 0)
             .attr("y2", height)
             .attr("x1", function(d) { return d.x })
@@ -218,49 +240,21 @@ var barGraph = view1Ctrl.directive('barGraph', ['d3Service', function(d3Service)
             .attr("cursor", "ew-resize")
             .call(drag);
 
-          // var dragBarLeft = chart.selectAll('.bin-bar')
-          //   .append("rect")
-          //   .attr("x", function(d) { return d.x })
-          //   .attr("y", function(d) { return d.y })
-          //   .attr("height", function(d) { return d.height; })
-          //   .attr("class", "drag-left")
-          //   .attr("width", barWidth -1)
-          //   .attr("cursor", "ew-resize")
-          //   .call(dragLeft);
-
-          // var dragBarRight = chart.selectAll('.bin-bar')
-          //   .append("rect")
-          //   .attr("x", function(d) { return d.x + d.width - barWidth + 1 })
-          //   .attr("y", function(d) { return d.y })
-          //   .attr("height", function(d) { return d.height; })
-          //   .attr("class", "drag-right")
-          //   .attr("width", barWidth -1)
-          //   .attr("cursor", "ew-resize")
-          //   .call(dragRight);
-
           function leftBound(elem) {
-            var prevElem = $(elem).parent().next().find('.drag');
+            var prevElem = $(elem).parent().next();
             var d = d3.selectAll(prevElem).data()[0];
-            return d.x + barWidth;
+            return d ? d.x + barWidth : barWidth;
+          }
+
+          function rightBound(elem) {
+            var prevElem = $(elem).parent().prev();
+            var d = d3.selectAll(prevElem).data()[0];
+            return d ? d.x - barWidth : width - barWidth;
           }
 
           function calculateBound(d, elem) {
             var positionSnap = Math.round(d3.event.x/barWidth)*barWidth;
-            return Math.max(leftBound(elem), Math.min(d.x + d.width - barWidth, positionSnap));
-          }
-
-          function calculateLeftBound(d) {
-            //Max x on the right is x + width - barWidth
-            //Max x on the left is 0 - (barWidth/2)
-            var positionSnap = Math.round(d3.event.x/barWidth)*barWidth;
-            return Math.max(0, Math.min(d.x + d.width - barWidth, positionSnap));
-          }
-
-          function calculateRightBound(d, offset) {
-            //Max x on the left is x - width 
-            //Max x on the right is width of screen + (barWidth/2)
-            var positionSnap = Math.round((offset + d3.event.x)/barWidth)*barWidth;
-            return Math.max(d.x + barWidth, Math.min(width, positionSnap));
+            return Math.max(leftBound(elem), Math.min(rightBound(elem), positionSnap));
           }
 
           function dragMove(d) {
@@ -271,50 +265,35 @@ var barGraph = view1Ctrl.directive('barGraph', ['d3Service', function(d3Service)
             d3.select(this)
               .attr("x1", d.x)
               .attr("x2", d.x);
-          }
-
-          function ldragresize(d) {
-            var oldx = d.x; 
-            d.x = calculateLeftBound(d);
-            d.width = d.width + (oldx - d.x);
-            d3.select(this)
-              .attr("x", function(d) { return d.x; });
-
             d3.select(this.previousSibling)
-              .attr("x", function(d) { return d.x; })
-              .attr("width", function(d) { return d.width });
+              .attr("x1", d.x)
+              .attr("x2", d.x);
           }
 
-          function rdragresize(d) {
-            var dragx = calculateRightBound(d, d.width);
-            var w = dragx - d.x - 1;
-
-            //move the right drag handle
-            d3.select(this)
-              .attr("x", function(d) { return dragx - barWidth });
-
-            //resize the drag rectangle
-            //as we are only resizing from the right, the x coordinate does not need to change
-            d3.select(this.previousSibling.previousSibling)
-              .attr("width", w);
-
+          function updateHistogram() {
+            var data = chart.selectAll('.bin-limits .drag').data();
+            var binThresholds = [keys[0]];
+            data.forEach(function(d) {
+              // reverse mapping compared to building histogram
+              binThresholds.push(keys[Math.round(x.invert(d.x))]);
+            });
+            binThresholds.push(keys[keys.length-1]);
+            var binThresholdsSorted = binThresholds.sort(function(a, b){return a-b});
+            console.log(binThresholds);
+            scope.createHistogram(scope.column.values, binThresholdsSorted);
           }
         }
 
         scope.removeDraggable = function() {
-          chart.selectAll('.bin-bar .drag-left').remove();
-          chart.selectAll('.bin-bar .drag-right').remove();
+          chart.selectAll('.bin-limits').remove();
         }
 
         scope.$watch('column', function(column) {
-          scope.chartData = groupData(column.values);
-          // console.log(chartData);
-          // histogram(column.values, '.chart_'+column.name, options, 10);
           scope.create_bar_graph(chartData, options);
         });
 
         scope.$on('bin_number_changed', function(event, value) {
-          scope.histogram(scope.column.values, chartData, value);
+          scope.createHistogramEvenly(value);
         });
 
         scope.$on('remove_histogram', function(event) {

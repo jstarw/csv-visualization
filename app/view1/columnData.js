@@ -1,4 +1,4 @@
-var columnData = view1Ctrl.directive('columnData', ['d3Service', function(d3Service) {
+var columnData = view1Ctrl.directive('columnData', function() {
   function link(scope, element, attrs, barGraph) {
     scope.isIncluded = true;
     scope.isCategorized = false;
@@ -32,6 +32,7 @@ var columnData = view1Ctrl.directive('columnData', ['d3Service', function(d3Serv
         scope.$broadcast('add_draggable');
       } else {
         scope.$broadcast('remove_draggable');
+        scope.$broadcast('bin_number_changed', scope.categories);
       }
     });
   }
@@ -43,4 +44,4 @@ var columnData = view1Ctrl.directive('columnData', ['d3Service', function(d3Serv
     },
     link: link
   }
-}]);
+});

@@ -10,7 +10,7 @@ var view1 = angular.module('myApp.view1', ['ngRoute','ngMaterial'])
 }]);
 
 var view1Ctrl = view1.controller('View1Ctrl', function ($scope, $timeout, $mdSidenav, $log, $http) {
-  $http.get('data/small.json').then(parseData)
+  $http.get('data/small2.json').then(parseData)
   $scope.toggleLeft = buildDelayedToggler('left');
   $scope.toggleRight = buildToggler('right');
   $scope.isOpenRight = function(){

@@ -67,7 +67,7 @@ var barGraph = view1Ctrl.directive('barGraph', ['d3Service', function(d3Service)
 
         var barWidth = width / chartData.length;
 
-        scope.create_bar_graph = function(chartData, options) {
+        scope.create_bar_graph = function(chartData) {
           // create x and y axis 
           var xAxis = d3.svg.axis()
             .scale(x)
@@ -303,7 +303,7 @@ var barGraph = view1Ctrl.directive('barGraph', ['d3Service', function(d3Service)
         }
 
         scope.$watch('column', function(column) {
-          scope.create_bar_graph(chartData, options);
+          scope.create_bar_graph(chartData);
         });
 
         scope.$on('bin_number_changed', function(event, value) {

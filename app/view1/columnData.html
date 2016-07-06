@@ -35,6 +35,6 @@
     <md-divider ng-hide="!categories"></md-divider>
   </md-list>
 
-  <!-- <bar-graph column="column" ng-if="column.dataType!='categorical'"></bar-graph> -->
+  <bar-graph column="column" ng-if="column.dataType!='categorical'"></bar-graph>
   <bubble-graph column="column" ng-if="column.dataType=='categorical'"></bubble-graph>
 </md-whiteframe>

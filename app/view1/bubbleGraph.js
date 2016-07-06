@@ -26,8 +26,6 @@ var bubbleGraph = view1Ctrl.directive('bubbleGraph', ['d3Service', function(d3Se
         var chart = d3.select(selector)
           .attr('width', options.width)
           .attr('height', options.height);
-          // .append('g')
-          //   .attr('transform', 'translate(' + options.margin_left + ',' + options.margin_top + ')');
 
         // set the width and height based off options given
         var width  = options.width  - options.margin_left - options.margin_right,
@@ -36,11 +34,10 @@ var bubbleGraph = view1Ctrl.directive('bubbleGraph', ['d3Service', function(d3Se
         var bubble = d3.layout.pack()
           .sort(null)
           .size([width, height])
-          .padding(1.5);
+          .padding(3);
 
         scope.create_bubble_graph = function() {
           var chartData = group_data(scope.column.values);
-          console.log(chartData);
 
           // appends data from chartData to svg element
           var node = chart.selectAll(".node")

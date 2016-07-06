@@ -1,16 +1,34 @@
 var barGraph = view1Ctrl.directive('barGraph', ['d3Service', function(d3Service) {
-  function groupData(res) {
-    var obj = {};
+  function groupData(histogram, binRange, numBins) {
+    var binSize = Math.round(histogram.length/numBins);
     var chartData = [];
-    for (var i=0; i<res.length; i++) {
-      if (!obj[res[i]]) obj[res[i]] = 1;
-      else obj[res[i]]++;
+    var counter = 0;
+    var zeroCounter = 0;
+    for (var i=0; i<histogram.length; i++) {
+      if (i==0) {
+        counter += histogram[i];
+      } else if (i%binSize==0 && counter==0) {
+        zeroCounter++;
+      } else if (i%binSize==0) {
+        chartData.push({
+          name: binRange[i-(zeroCounter+1)*binSize]+'-'+binRange[i], 
+          value: counter,
+          x: binRange[i-(zeroCounter+1)*binSize],
+          dx: binRange[i]-binRange[i-(zeroCounter+1)*binSize]
+        });
+        counter = zeroCounter = 0;
+      } else if (i==histogram.length-1) {
+        counter += histogram[i];
+        chartData.push({
+          name: binRange[i-(zeroCounter+1)*binSize]+'-'+binRange[i+1], 
+          value: counter,
+          x: binRange[i-(zeroCounter+1)*binSize],
+          dx: binRange[i+1]-binRange[i-(zeroCounter+1)*binSize]
+        });
+      } else {
+        counter += histogram[i];
+      }
     }
-    //pushes objects inside obj into array
-    var chartData = Object.keys(obj).map(function (key) {
-      return {name:key, value:obj[key]}
-    });
-
     return chartData;
   }
 
@@ -44,7 +62,7 @@ var barGraph = view1Ctrl.directive('barGraph', ['d3Service', function(d3Service)
           .append('g')
             .attr('transform', 'translate(' + options.margin_left + ',' + options.margin_top + ')');;
 
-        var chartData = groupData(scope.column.values);
+        var chartData = groupData(scope.column.hist, scope.column.binRange, 100);
         var keys = chartData.map(function(x) {return +x.name}).sort(function(a, b){return a-b});
         var reverseKeys = {};
         for (var i=0; i<keys.length; i++) {
@@ -59,7 +77,11 @@ var barGraph = view1Ctrl.directive('barGraph', ['d3Service', function(d3Service)
         // create linear scale
         var x = d3.scale.linear()
           .range([0, width])
-          .domain([0, chartData.length]);
+          .domain([0, scope.column.binRange[scope.column.binRange.length-1]]);
+
+        var xOrdinal = d3.scale.ordinal()
+          .rangeBands([0,width])
+          .domain(chartData.map(function(d) { return d.x }));
 
         var y = d3.scale.linear()
           .range([height, 0])
@@ -67,10 +89,12 @@ var barGraph = view1Ctrl.directive('barGraph', ['d3Service', function(d3Service)
 
         var barWidth = width / chartData.length;
 
-        scope.create_bar_graph = function(chartData) {
+        scope.create_bar_graph = function() {
           // create x and y axis 
           var xAxis = d3.svg.axis()
-            .scale(x)
+            .scale(xOrdinal)
+            .tickValues(xOrdinal.domain().filter(function(d, i) { return !(i % 10); }))
+            .tickFormat(d3.format(",.1f"))
             .orient('bottom');
 
           var yAxis = d3.svg.axis()
@@ -303,7 +327,7 @@ var barGraph = view1Ctrl.directive('barGraph', ['d3Service', function(d3Service)
         }
 
         scope.$watch('column', function(column) {
-          scope.create_bar_graph(chartData);
+          scope.create_bar_graph();
         });
 
         scope.$on('bin_number_changed', function(event, value) {

@@ -20,7 +20,7 @@ svg g.bin-bar rect.drag-right {
   fill: yellow;
 }
 
-svg rect {
+svg rect, svg path {
   fill: steelblue;
 }
 
@@ -51,12 +51,6 @@ svg .bin-limits .line {
   stroke: #000;
   shape-rendering: crispEdges;
 }
-
-.bin-line {
-  stroke: black;
-  stroke-width: 2px;
-}
-
 /* TOOLTIP STYLE */ 
 .d3-tip {
   line-height: 1;

@@ -1,10 +1,14 @@
 var columnData = view1Ctrl.directive('columnData', function() {
   function link(scope, element, attrs, barGraph) {
+    scope.linearScale = false;
     scope.isIncluded = true;
     scope.isCategorized = false;
     scope.categories;
     scope.isEvenlyDistributed = true;
 
+    scope.$watch('linearScale', function(newVal) {
+      scope.$broadcast('change_scale', newVal);
+    });
     scope.$watch('isIncluded', function(newVal) {
       if (newVal==false) {
         scope.isCategorized = false;

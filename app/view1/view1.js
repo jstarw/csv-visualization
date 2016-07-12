@@ -13,17 +13,42 @@ var view1Ctrl = view1.controller('View1Ctrl', function ($scope, $timeout, $mdSid
   $http.get('data/small2.json').then(parseData)
   $scope.toggleLeft = buildDelayedToggler('left');
   $scope.toggleRight = buildToggler('right');
+  $scope.outputData = {}; // JSON Object to be sent with the POST request
+
   $scope.isOpenRight = function(){
     return $mdSidenav('right').isOpen();
   }
   $scope.switchView = function(columnName) {
     $scope.whichActive = columnName;
   }
+  $scope.submit = function() {
+
+  }
+  $scope.$on('column_change', updateData);
+
+  function updateData(event, obj) {
+    console.log(obj);
+    // find and replace current element in array with new element
+    var index = -1;
+    $scope.outputData.columns.forEach(function(d, i) {
+      if (obj.name==d.name) index = i;
+    });
+    if (index != -1) {
+      $scope.outputData.columns.splice(index, 1);
+      $scope.outputData.columns.push(obj);
+    } else {
+      $scope.outputData.columns.push(obj);
+    }
+  }
+
   function parseData(res) {
     var data = res.data;
-    $scope.numberOfColumns = data.numberOfColumns;
     $scope.columns = data.columns;
     $scope.whichActive = $scope.columns[0].name;
+    // update outputData
+    $scope.outputData.numberOfColumns = data.numberOfColumns;
+    $scope.outputData.dataSize = data.dataSize;
+    $scope.outputData.columns = [];
   }
   /**
    * Supplies a function that will continue to operate until the

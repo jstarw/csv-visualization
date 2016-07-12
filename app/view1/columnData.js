@@ -5,21 +5,20 @@ var columnData = view1Ctrl.directive('columnData', function() {
     scope.isCategorized = false;
     scope.categories;
     scope.isEvenlyDistributed = true;
+    scope.thresholds;
 
     scope.$watch('linearScale', function(newVal) {
       scope.$broadcast('change_scale', newVal);
+      scope.isCategorized = false;
     });
     scope.$watch('isIncluded', function(newVal) {
       if (newVal==false) {
         scope.isCategorized = false;
-        scope.categories = null;
-        scope.isEvenlyDistributed = true;
       }
     });
     scope.$watch('isCategorized', function(newVal) {
       if (newVal==false) {
         scope.categories = null;
-        scope.isEvenlyDistributed = true;
       }
     });
     scope.$watch('categories', function(newVal) {
@@ -34,11 +33,38 @@ var columnData = view1Ctrl.directive('columnData', function() {
     scope.$watch('isEvenlyDistributed', function(newVal) {
       if (newVal==false && scope.categories) {
         scope.$broadcast('add_draggable');
-      } else {
+      } else if (newVal==true && scope.categories) {
         scope.$broadcast('remove_draggable');
         scope.$broadcast('bin_number_changed', scope.categories);
+      } else {
+        scope.$broadcast('remove_draggable');
       }
     });
+    scope.$watchGroup(
+      ['isIncluded', 'isCategorized', 'categories', 'thresholds'],
+      function() {
+        aggregateValues();
+    })
+
+    function aggregateValues() {
+      var aggregate = {
+        name: scope.column.name,
+        dataType: scope.column.dataType,
+        totalIDs: scope.column.totalIDs,
+        isExcluded: !scope.isIncluded,
+        offset: scope.column.offset,
+        isCategorized: scope.isCategorized
+      }
+      if (scope.column.totalIDs <= 100) aggregate.uniqueIDs = scope.column.uniqueIDs;
+      if (scope.isCategorized) {
+        aggregate.bins = {
+          method: 'user_specified_numeric',
+          totalBins: scope.categories,
+          numericMap: scope.thresholds
+        }
+      }
+      scope.$emit('column_change', aggregate);
+    }
   }
   return {
     restrict: 'EA',

@@ -3,14 +3,6 @@ Array.prototype.last = function() {
 };
 
 var barGraph = view1Ctrl.directive('barGraph', ['d3Service', function(d3Service) {
-  function combineHistogram(histogram, binRange) {
-    var chartData = [];
-    for (var i=0; i<histogram.length; i++) {
-      chartData.push({
-        
-      });
-    }
-  }
   function groupData(histogram, binRange, numBins) {
     var binSize = Math.round(histogram.length/numBins);
     var chartData = [];
@@ -49,7 +41,9 @@ var barGraph = view1Ctrl.directive('barGraph', ['d3Service', function(d3Service)
     for (var i=0; i<histogram.length; i++) {
       chartData.push({
         name: binRange[i] + '-' + binRange[i+1],
-        value: histogram[i]
+        value: histogram[i],
+        x: binRange[i],
+        dx: binRange[i+1]-binRange[i]
       });
     }
     return chartData;
@@ -87,17 +81,8 @@ var barGraph = view1Ctrl.directive('barGraph', ['d3Service', function(d3Service)
 
         var chartData = groupData(scope.column.hist, scope.column.binRange, 100);
         var chartDataLinear = groupDataLinear(scope.column.histLinear, scope.column.binRangeLinear);
-        var thresholdLinear = chartDataLinear.map(function(d) { return d.x; });
         var threshold = chartData.map(function(d) { return d.x; });
-        thresholdLinear.push(scope.column.binRangeLinear.last()); // add last item to threshold
         threshold.push(scope.column.binRange.last()); // add last item to threshold
-
-        // var keys = chartData.map(function(x) {return +x.name});
-        // var reverseKeys = {};
-        // for (var i=0; i<keys.length; i++) {
-        //   if (i==keys.length-1) reverseKeys[keys[i]] = i+1; // must include last element
-        //   else reverseKeys[keys[i]] = i;
-        // }
 
         // set the width and height based off options given
         var width  = options.width  - options.margin_left - options.margin_right,
@@ -106,12 +91,7 @@ var barGraph = view1Ctrl.directive('barGraph', ['d3Service', function(d3Service)
         // create linear scale
         var xLinear = d3.scale.linear()
           .range([0, width])
-          .domain([scope.column.binRangeLinear[0], scope.column.binRangeLinear[scope.column.binRangeLinear.length-1]]);
-
-        // create ordinal scale
-        var xOrdinal = d3.scale.ordinal()
-          .rangeBands([0,width])
-          .domain(threshold);
+          .domain([scope.column.binRangeLinear[0], scope.column.binRangeLinear.last()]);
 
         var xQuantile = d3.scale.quantile()
           .domain(threshold)
@@ -126,6 +106,7 @@ var barGraph = view1Ctrl.directive('barGraph', ['d3Service', function(d3Service)
         var currentData; // value to store either chartData or chartDataLinear
         var currentX;
         var currentXAxis; // value to store either xLinear or xOrdinal
+        var currentThresholds; // value to store the range of bins
 
         scope.changeScale = function(isLinear) {
           switch(isLinear) {
@@ -175,6 +156,7 @@ var barGraph = view1Ctrl.directive('barGraph', ['d3Service', function(d3Service)
             });
           // appends data from chartData to svg element
           scope.removeBarGraph();
+          scope.removeDraggable();
 
           var bar = chart.selectAll('g')
             .data(currentData)
@@ -212,12 +194,6 @@ var barGraph = view1Ctrl.directive('barGraph', ['d3Service', function(d3Service)
             .attr('x', 10)
             .attr('y', 30)
             .text('Values in column '+scope.column.name);
-
-          // function to convert from string to number
-          function type(d) {
-            d.value = +d.value; 
-            return d;
-          }
         }
 
         scope.createHistogramFromRange = function(range) {
@@ -252,7 +228,7 @@ var barGraph = view1Ctrl.directive('barGraph', ['d3Service', function(d3Service)
           }
           // add in last bin if not accounted for
           if (range[j]) {
-            counter = chartData.last().value;
+            counter = currentData.last().value;
             histogramData.push({
               name: range[j-1] + '-' + range[j],
               value: counter,
@@ -260,11 +236,17 @@ var barGraph = view1Ctrl.directive('barGraph', ['d3Service', function(d3Service)
               dx: currentX(currentData.last().x + currentData.last().dx)-currentX(range[j-1])
             });
           }
-          console.log(histogramData);
+
+          scope.$parent.thresholds = range; // update thresholds in parent scope
+          scope.safeRefresh(scope.$parent);
           scope.createHistogram(histogramData);
         }
 
-        scope.createHistogramEvenly2 = function(bins) {
+        scope.safeRefresh = function(sc) {
+          if (sc.$root.$$phase != '$apply' && sc.$root.$$phase != '$digest') sc.$apply();
+        }
+
+        scope.createHistogramEvenly = function(bins) {
           var binSize = currentData.length / bins;
           var binCounter = binSize;
           var range = [currentData[0].x];
@@ -274,26 +256,12 @@ var barGraph = view1Ctrl.directive('barGraph', ['d3Service', function(d3Service)
               binCounter += binSize;
             }
           }
+          range.push(currentX.domain().last()); // include right bound
           scope.createHistogramFromRange(range);
-        }
-
-        scope.createHistogramEvenly = function(bins) {
-          var binSize = chartData.length / bins;
-          var binThresholds = [];
-          for (var i=0; i<bins; i++) {
-            binThresholds.push(keys[Math.round(i*binSize)]);
-          }
-          binThresholds.push(keys[keys.length-1]);
-
-          scope.createHistogram(scope.column.values, binThresholds);
         }
 
         scope.createHistogram = function(binThresholds) {
           scope.removeHistogram();
-          // var hist = d3.layout.histogram()
-          //   .bins(binThresholds)
-          //   (values);
-          // console.log(hist);
 
           var y1 = d3.scale.linear()
             .domain([0, d3.max(binThresholds, function(d) { return d.value; })])
@@ -305,18 +273,6 @@ var barGraph = view1Ctrl.directive('barGraph', ['d3Service', function(d3Service)
               return  "<div>Range: " + d.name + "</div>" + 
                       "<div>Total Count: " + d.value + "</div>";
             });
-
-          // var histData = hist.map(function(d) {
-          //   return {
-          //     x: barWidth*reverseKeys[d.x],
-          //     y: y1(d.y),
-          //     width: barWidth*(reverseKeys[d.x + d.dx] - reverseKeys[d.x])-1,
-          //     height: height - y1(d.y),
-          //     freq: d.y,
-          //     range:[d.x,d.x+d.dx]
-          //   }
-          // });
-          // console.log(histData);
 
           var barWidth = width / currentData.length;
 
@@ -441,11 +397,7 @@ var barGraph = view1Ctrl.directive('barGraph', ['d3Service', function(d3Service)
           }
 
           function dragMove(d) {
-            // var oldx = d.x; 
             d.x = calculateBound(d, this);
-            // d.width = d.width + (oldx - d.x);
-            // var xdiff = d.x - oldx;
-            // console.log(d.x);
             d3.select(this)
               .attr("x1", d.x)
               .attr("x2", d.x);
@@ -456,23 +408,22 @@ var barGraph = view1Ctrl.directive('barGraph', ['d3Service', function(d3Service)
 
           function updateHistogram() {
             var data = chart.selectAll('.bin-limits .drag').data();
-            // var binThresholds = [keys[0]];
-            // data.forEach(function(d) {
-            //   // reverse mapping compared to building histogram
-            //   binThresholds.push(keys[Math.round(x.invert(d.x))]);
-            // });
-            // binThresholds.push(keys[keys.length-1]);
-            // var binThresholdsSorted = binThresholds.sort(function(a, b){return a-b});
-            // console.log(binThresholds);
-            // scope.createHistogram(scope.column.values, binThresholdsSorted);
             var binThresholds = [currentData[0].x];
-            data.forEach(function(d) {
-              binThresholds.push(reverseQuantile[currentX.invertExtent(closestTo(currentX.range(),d.x))]);
-            });
-            binThresholds.push(currentX.domain().last());
+            if (scope.linearScale) {
+              var keys = currentData.map(function(d) { return d.x; });
+              data.forEach(function(d) {
+                binThresholds.push(closestTo(keys, currentX.invert(d.x)));
+              });
+              binThresholds.push(currentData.last().x+currentData.last().dx);
+            } else {
+              var keys = currentX.range();
+              data.forEach(function(d) {
+                binThresholds.push(reverseQuantile[currentX.invertExtent(closestTo(keys,d.x))]);
+              });
+              binThresholds.push(currentX.domain().last());
+            }
             var binThresholdsSorted = binThresholds.sort(function(a, b){return a-b});
-            console.log(binThresholds);
-            scope.createHistogramFromRange(binThresholds);
+            scope.createHistogramFromRange(binThresholdsSorted);  
           }
         }
 
@@ -491,7 +442,7 @@ var barGraph = view1Ctrl.directive('barGraph', ['d3Service', function(d3Service)
         });
 
         scope.$on('bin_number_changed', function(event, value) {
-          scope.createHistogramEvenly2(value);
+          scope.createHistogramEvenly(value);
         });
 
         scope.$on('remove_histogram', function(event) {

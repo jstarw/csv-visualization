@@ -20,10 +20,6 @@
   <md-list>
     <md-subheader class="md-no-sticky">Single Action Checkboxes</md-subheader>
     <md-list-item>
-      <p>Use Linear Scale</p>
-      <md-switch class="md-secondary" ng-model="linearScale"></md-switch>
-    </md-list-item>
-    <md-list-item>
       <p>Should this column be included?</p>
       <md-checkbox class="md-secondary" ng-model="isIncluded"></md-checkbox>
     </md-list-item>
@@ -42,14 +38,26 @@
       <md-slider flex md-discrete min="0" max="20" ng-model="categories" aria-label="red"></md-slider>
     </md-list-item>
     <md-divider ng-hide="!categories"></md-divider>
-
-    <md-list-item ng-hide="!categories">
-      <p>Evenly distributed?</p>
-      <md-checkbox class="md-secondary" ng-model="isEvenlyDistributed"></md-checkbox>
-    </md-list-item>
-    <md-divider ng-hide="!categories"></md-divider>
   </md-list>
 
-  <bar-graph column="column" ng-if="column.dataType!='categorical'"></bar-graph>
-  <bubble-graph column="column" ng-if="column.dataType=='categorical'"></bubble-graph>
+  <md-grid-list
+    md-cols="2" md-cols-sm="4" md-cols-md="6" md-cols-gt-md="6"
+    md-row-height-gt-md="4:3" md-row-height="4:3"
+    md-gutter="8px" md-gutter-gt-sm="4px" >
+    <md-grid-tile 
+      ng-repeat="tile in tiles"
+      md-rowspan="{{tile.span.row}}"
+      md-colspan="{{tile.span.row}}"
+      style="background:{{tile.colour}}"
+      class="bubble-category">
+      <div layout-fill md-ink-ripple="true" ng-click="choose(tile)"></div>
+      <md-grid-tile-footer>
+        <md-input-container md-no-float>
+          <input ng-model="tile.name" placeholder="Category Name">
+        </md-input-container>
+      </md-grid-tile-footer>
+    </md-grid-tile>
+  </md-grid-list>
+
+  <bubble-graph column="column"></bubble-graph>
 </md-whiteframe>

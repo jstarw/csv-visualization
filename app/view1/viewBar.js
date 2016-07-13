@@ -1,5 +1,5 @@
-var columnData = view1Ctrl.directive('columnData', function() {
-  function link(scope, element, attrs, barGraph) {
+var viewBar = view1Ctrl.directive('viewBar', function() {
+  function link(scope, element, attrs) {
     scope.linearScale = false;
     scope.isIncluded = true;
     scope.isCategorized = false;
@@ -68,7 +68,7 @@ var columnData = view1Ctrl.directive('columnData', function() {
   }
   return {
     restrict: 'EA',
-    templateUrl: 'view1/columnData.html',
+    templateUrl: 'view1/viewBar.html',
     scope: {
       column: '=column'
     },

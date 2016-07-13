@@ -77,7 +77,7 @@ var barGraph = view1Ctrl.directive('barGraph', ['d3Service', function(d3Service)
           .attr('width', 0)
           .attr('height', 0)
           .append('g')
-            .attr('transform', 'translate(' + options.margin_left + ',' + options.margin_top + ')');;
+            .attr('transform', 'translate(' + options.margin_left + ',' + options.margin_top + ')');
 
         var chartData = groupData(scope.column.hist, scope.column.binRange, 100);
         var chartDataLinear = groupDataLinear(scope.column.histLinear, scope.column.binRangeLinear);

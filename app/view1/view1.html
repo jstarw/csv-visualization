@@ -41,13 +41,19 @@
 
     <md-content flex layout-padding>
       <div layout="column" layout-fill layout-align="top center">
-        <div layout="row" ng-cloak>
-          <column-data 
+        <div layout="row" ng-repeat="column in columns" ng-cloak>
+          <view-bar 
               layout="column"
-              ng-repeat="column in columns" 
+              ng-if="column.dataType!='categorical'"
               ng-show="whichActive==column.name"
               column='column'>
-          </column-data>
+          </view-bar>
+          <view-bubble 
+              layout="column"
+              ng-if="column.dataType=='categorical'"
+              ng-show="whichActive==column.name"
+              column='column'>
+          </view-bubble>
         </div>
       </div>
       <div flex></div>

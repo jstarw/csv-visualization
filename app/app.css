@@ -108,3 +108,16 @@ svg .bin-limits .line {
   top: 50%;
   left: 100%;
 }
+
+/* BUBBLE CHART */
+svg .node .circle {
+  opacity: 0.75;
+}
+
+svg .node .circle:hover {
+  opacity: 1;
+}
+
+.bubble-category {
+
+}

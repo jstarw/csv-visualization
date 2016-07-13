@@ -22,12 +22,13 @@ var view1Ctrl = view1.controller('View1Ctrl', function ($scope, $timeout, $mdSid
     $scope.whichActive = columnName;
   }
   $scope.submit = function() {
-
+    validateData(scope.outputData);
+    var jsonSerializedData = JSON.stringify(scope.outputData);
+    $http.post(url, jsonSerializedData)
   }
   $scope.$on('column_change', updateData);
 
   function updateData(event, obj) {
-    console.log(obj);
     // find and replace current element in array with new element
     var index = -1;
     $scope.outputData.columns.forEach(function(d, i) {
@@ -49,6 +50,10 @@ var view1Ctrl = view1.controller('View1Ctrl', function ($scope, $timeout, $mdSid
     $scope.outputData.numberOfColumns = data.numberOfColumns;
     $scope.outputData.dataSize = data.dataSize;
     $scope.outputData.columns = [];
+  }
+
+  function validateData(data) {
+    
   }
   /**
    * Supplies a function that will continue to operate until the

@@ -14,10 +14,6 @@ angular.module('d3', [])
     scriptTag.type = 'text/javascript';
     scriptTag.async = false;
     scriptTag.src = 'bower_components/d3/d3.js';
-    // scriptTag.onreadystatechange = function () {
-    //   if (this.readyState === 'complete') { onScriptLoad(); }
-    // };
-    // scriptTag.onload = onScriptLoad;
 
     var scriptTag2 = $document[0].createElement('script');
     scriptTag2.type = 'text/javascript';

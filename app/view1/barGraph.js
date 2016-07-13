@@ -445,15 +445,15 @@ var barGraph = view1Ctrl.directive('barGraph', ['d3Service', function(d3Service)
           scope.createHistogramEvenly(value);
         });
 
-        scope.$on('remove_histogram', function(event) {
+        scope.$on('remove_histogram', function() {
           scope.removeHistogram();
         });
 
-        scope.$on('add_draggable', function(event) {
+        scope.$on('add_draggable', function() {
           scope.addDraggable();
         });
 
-        scope.$on('remove_draggable', function(event) {
+        scope.$on('remove_draggable', function() {
           scope.removeDraggable();
         });
       });

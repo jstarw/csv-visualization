@@ -6,6 +6,7 @@ var viewBar = view1Ctrl.directive('viewBubble', function() {
     scope.thresholds;
     scope.tiles = [];
     scope.palette = shuffle(palette('tol-rainbow', 20));
+    scope.selectedIndex = -1;
     var paletteIndex = 0;
 
     scope.$watch('isIncluded', function(newVal) {
@@ -19,17 +20,20 @@ var viewBar = view1Ctrl.directive('viewBubble', function() {
       }
     });
     scope.$watch('categories', function(newVal, oldVal) {
-      if (newVal==0) {
-        scope.$broadcast('remove_categories');
-      } else {
+      // if (newVal==0) {
+      //   scope.$broadcast('remove_categories');
+      // } else {
         scope.$broadcast('categories_changed', newVal, oldVal);
-      }
+      // }
 
       createCategoryBox(newVal, oldVal);
     });
 
-    scope.choose = function(tile) {
-      console.log(tile);
+    scope.choose = function(tile, index) {
+      console.log(tile, index);
+      scope.selectedIndex = index;
+      scope.$broadcast('remove_listener');
+      scope.$broadcast('add_listener', tile.colour);
     }
 
     scope.$watchGroup(

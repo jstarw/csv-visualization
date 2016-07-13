@@ -49,8 +49,9 @@
       md-rowspan="{{tile.span.row}}"
       md-colspan="{{tile.span.row}}"
       style="background:{{tile.colour}}"
+      ng-class="{selected: $index==selectedIndex}"
       class="bubble-category">
-      <div layout-fill md-ink-ripple="true" ng-click="choose(tile)"></div>
+      <div layout-fill md-ink-ripple="true" ng-click="choose(tile, $index)"></div>
       <md-grid-tile-footer>
         <md-input-container md-no-float>
           <input ng-model="tile.name" placeholder="Category Name">

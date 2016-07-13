@@ -68,8 +68,26 @@ var bubbleGraph = view1Ctrl.directive('bubbleGraph', ['d3Service', function(d3Se
             .style('fill', 'rgb(212,212,212)');
         }
 
+        function addStandardColour() {
+          chart.selectAll('circle')
+            .style('fill', function(d) { return color(d.name); });
+        }
+
         function addCategories(numCategories) {
 
+        }
+
+        function addListener(colour) {
+          var nodes = $(chart.selectAll('circle')[0]);
+          nodes.attr('cursor', 'pointer');
+          nodes.parent().on('click', function() {
+            $(this).css('fill', colour);
+          });
+        }
+
+        function removeListener() {
+          var nodes = $(chart.selectAll('circle')[0]);
+          nodes.unbind('click');
         }
 
         scope.$watch('column', function() {
@@ -80,9 +98,20 @@ var bubbleGraph = view1Ctrl.directive('bubbleGraph', ['d3Service', function(d3Se
           console.log(newVal, oldVal);
           if (oldVal == 0) {
             removeStandardColour();
+          } else if (newVal == 0) {
+            addStandardColour();
+          } else {
+            addCategories(newVal);
           }
-          addCategories(newVal);
+        });
+
+        scope.$on('remove_listener', function() {
+          removeListener();
         })
+
+        scope.$on('add_listener', function(event, colour) {
+          addListener(colour);
+        });
       });
     }
   };

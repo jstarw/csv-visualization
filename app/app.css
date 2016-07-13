@@ -110,14 +110,19 @@ svg .bin-limits .line {
 }
 
 /* BUBBLE CHART */
-svg .node .circle {
+svg .node {
   opacity: 0.75;
 }
 
-svg .node .circle:hover {
+svg .node:hover {
   opacity: 1;
 }
 
 .bubble-category {
+  cursor: pointer;
+  opacity: 1;
+}
 
+.bubble-category.selected {
+  opacity: 0.75;
 }

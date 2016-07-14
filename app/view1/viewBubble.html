@@ -37,18 +37,17 @@
     <md-list-item ng-hide="!isCategorized">
       <md-slider flex md-discrete min="0" max="20" ng-model="categories" aria-label="red"></md-slider>
     </md-list-item>
-    <md-divider ng-hide="!categories"></md-divider>
   </md-list>
 
   <md-grid-list
     md-cols="2" md-cols-sm="4" md-cols-md="6" md-cols-gt-md="6"
     md-row-height-gt-md="4:3" md-row-height="4:3"
-    md-gutter="8px" md-gutter-gt-sm="4px" >
+    md-gutter="8px" md-gutter-gt-sm="4px"   >
     <md-grid-tile 
       ng-repeat="tile in tiles"
       md-rowspan="{{tile.span.row}}"
       md-colspan="{{tile.span.row}}"
-      style="background:{{tile.colour}}"
+      style="background:{{'#'+tile.colour}}"
       ng-class="{selected: $index==selectedIndex}"
       class="bubble-category">
       <div layout-fill md-ink-ripple="true" ng-click="choose(tile, $index)"></div>

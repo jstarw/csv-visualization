@@ -6,8 +6,8 @@ var viewBar = view1Ctrl.directive('viewBubble', function() {
     scope.thresholds;
     scope.tiles = [];
     scope.palette = shuffle(palette('tol-rainbow', 20));
-    scope.selectedIndex = -1;
-    var paletteIndex = 0;
+    scope.paletteIndex = 0; // to keep track of the current number of colours
+    scope.selectedIndex = -1; // to keep track of which category is selected
 
     scope.$watch('isIncluded', function(newVal) {
       if (newVal==false) {
@@ -23,17 +23,22 @@ var viewBar = view1Ctrl.directive('viewBubble', function() {
       // if (newVal==0) {
       //   scope.$broadcast('remove_categories');
       // } else {
-        scope.$broadcast('categories_changed', newVal, oldVal);
+      //   scope.$broadcast('categories_changed', newVal, oldVal);
       // }
 
       createCategoryBox(newVal, oldVal);
+      scope.$broadcast('categories_changed', newVal, oldVal);
     });
 
     scope.choose = function(tile, index) {
-      console.log(tile, index);
-      scope.selectedIndex = index;
-      scope.$broadcast('remove_listener');
-      scope.$broadcast('add_listener', tile.colour);
+      // when clicking itself, turn off selection
+      if (scope.selectedIndex == index) {
+        scope.selectedIndex = -1;
+        scope.$broadcast('remove_listener');    
+      } else {
+        scope.selectedIndex = index;
+        scope.$broadcast('add_listener', tile.colour);  
+      }
     }
 
     scope.$watchGroup(
@@ -46,14 +51,14 @@ var viewBar = view1Ctrl.directive('viewBubble', function() {
       var difference = oldVal - newVal;
       if (difference > 0) {
         scope.tiles.splice(newVal, difference);
-        paletteIndex -= difference;
+        scope.paletteIndex -= difference;
       } else {
         for (var i=0; i < (-difference); i++) {
           var tile = {};
           tile.span = {row:1, col:1};
-          tile.colour = '#' + scope.palette[paletteIndex];
+          tile.colour = scope.palette[scope.paletteIndex];
           scope.tiles.push(tile);
-          paletteIndex++;
+          scope.paletteIndex++;
         }
       }
     }

@@ -120,9 +120,13 @@ svg .node:hover {
 
 .bubble-category {
   cursor: pointer;
-  opacity: 1;
+}
+
+.bubble-category:hover {
+  outline: 1px black solid;
 }
 
 .bubble-category.selected {
-  opacity: 0.75;
+  outline: 2px black solid;
+  +filter: brightness(50%);
 }

@@ -27,7 +27,7 @@ var viewBar = view1Ctrl.directive('viewBubble', function() {
       // }
 
       createCategoryBox(newVal, oldVal);
-      scope.$broadcast('categories_changed', newVal, oldVal);
+      scope.$broadcast('categories_changed', newVal, oldVal, scope.tiles);
     });
 
     scope.choose = function(tile, index) {
@@ -37,7 +37,7 @@ var viewBar = view1Ctrl.directive('viewBubble', function() {
         scope.$broadcast('remove_listener');    
       } else {
         scope.selectedIndex = index;
-        scope.$broadcast('add_listener', tile.colour);  
+        scope.$broadcast('add_listener', tile);  
       }
     }
 
@@ -54,9 +54,11 @@ var viewBar = view1Ctrl.directive('viewBubble', function() {
         scope.paletteIndex -= difference;
       } else {
         for (var i=0; i < (-difference); i++) {
-          var tile = {};
-          tile.span = {row:1, col:1};
-          tile.colour = scope.palette[scope.paletteIndex];
+          var tile = {
+            span: {row:1, col:1},
+            colour: scope.palette[scope.paletteIndex],
+            name: 'category ' + (scope.paletteIndex+1)
+          };
           scope.tiles.push(tile);
           scope.paletteIndex++;
         }

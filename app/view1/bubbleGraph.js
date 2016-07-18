@@ -15,35 +15,36 @@ var bubbleGraph = view1Ctrl.directive('bubbleGraph', ['d3Service', function(d3Se
         }
 
         // set the width and height based off options given
-        var width  = options.width  - options.margin_left - options.margin_right,
-            height = options.height - options.margin_top  - options.margin_bottom;
+        var width  = options.width  
+            height = options.height ;
 
         var selector = '.chart_'+scope.column.name;
         var color = d3.scale.category20c();
         var format = d3.format(',d');
 
-        var data = group_data2(scope.column.values);
-
         var chart = d3.select(selector)
           .attr('width', options.width)
           .attr('height', options.height)
-          .append('g')
-            .attr('transform', 'translate(' + options.margin_left + ',' + options.margin_top + ')');
+          // .append('g')
+          //   .attr('transform', 'translate(' + options.margin_left + ',' + options.margin_top + ')');
 
-        var bubble = d3.layout.pack()
-          .sort(null)
-          .size([600, 600])
-          .padding(3);
+        var charge = function(d) {
+          return -Math.pow(d.radius, 2.0) / 4;
+        }
+
+        var radiusScale = d3.scale.pow()
+          .exponent(0.5)
+          .domain([1, d3.max(_.values(scope.column.values))])
+          .range([10, 100]);
 
         // variables related to force chart
+        var data = group_data(scope.column.values);
         var damper = 0.2;
         var padding = 4;
         var maxRadius = d3.max(_.pluck(data, 'radius'));
-        var force = d3.layout.force()
-          .size([width,height])
-          .charge(function(d) {
-            return -Math.pow(d.radius, 2.0) / 8;
-          })
+        var force = d3.layout.force().size([width,height])
+          .nodes(data)
+          .charge(charge)
           .gravity(-0.01)
           .friction(0.9);
         // variable to store the centers of the categories
@@ -53,17 +54,13 @@ var bubbleGraph = view1Ctrl.directive('bubbleGraph', ['d3Service', function(d3Se
 
         function group_data(data) {
           var chartData =  Object.keys(data).map(function (key) {
-            return {name: key, value: data[key]};
-          });
-          return {children: chartData};
-        }
-
-        function group_data2(data) {
-          var chartData =  Object.keys(data).map(function (key) {
             return {
               name: key, 
               value: data[key],
-              category: 'testName'
+              category: 'testName',
+              x: Math.random() * width,
+              y: Math.random() * height,
+              radius: radiusScale(data[key])
             };
           });
           return chartData;
@@ -78,26 +75,8 @@ var bubbleGraph = view1Ctrl.directive('bubbleGraph', ['d3Service', function(d3Se
         function draw(varname) {
           centers = getCenters(varname, [width, height], centers);
           force.on("tick", tick(centers, varname));
-          labels(centers)
+          labels(centers);
           force.start();
-        }
-
-        function tick (centers, varname) {
-          var foci = {}; // Making an object here for quick look-up
-          for (var i = 0; i < centers.length; i++) {
-            foci[centers[i].name] = centers[i];
-          }
-          return function (e) { //A
-            for (var i = 0; i < data.length; i++) {
-              var o = data[i];
-              var f = foci[o[varname]];
-              o.y += ((f.y + (f.dy / 2)) - o.y) * damper * e.alpha;
-              o.x += ((f.x + (f.dx / 2)) - o.x) * damper * e.alpha;
-            }
-            chart.selectAll('circle').each(collide(.1)) //B
-              .attr("cx", function (d) { return d.x; })
-              .attr("cy", function (d) { return d.y; });
-          }
         }
 
         function labels(centers) {
@@ -112,31 +91,25 @@ var bubbleGraph = view1Ctrl.directive('bubbleGraph', ['d3Service', function(d3Se
           });
         }
 
-        function collide(alpha) {
-          var quadtree = d3.geom.quadtree(data);
-          return function(d) {
-            var r = d.radius + maxRadius + padding,
-                nx1 = d.x - r,
-                nx2 = d.x + r,
-                ny1 = d.y - r,
-                ny2 = d.y + r;
-            quadtree.visit(function(quad, x1, y1, x2, y2) {
-              if (quad.point && (quad.point !== d)) {
-                var x = d.x - quad.point.x,
-                    y = d.y - quad.point.y,
-                    l = Math.sqrt(x * x + y * y),
-                    r = d.radius + quad.point.radius + padding;
-                if (l < r) {
-                  l = (l - r) / l * alpha;
-                  d.x -= x *= l;
-                  d.y -= y *= l;
-                  quad.point.x += x;
-                  quad.point.y += y;
-                }
+        function tick (centers, varname) {
+          var foci = {}; // Making an object here for quick look-up
+          for (var i = 0; i < centers.length; i++) {
+            foci[centers[i].name] = centers[i];
+          }
+          return function (e) { //A
+            for (var i = 0; i < data.length; i++) {
+              var o = data[i];
+              var f = foci[o[varname]];
+              if (!f) {
+                console.log(f);
               }
-              return x1 > nx2 || x2 < nx1 || y1 > ny2 || y2 < ny1;
-            });
-          };
+              o.y += ((f.y + (f.dy / 2)) - o.y) * damper * e.alpha * 1.1;
+              o.x += ((f.x + (f.dx / 2)) - o.x) * damper * e.alpha * 1.1;
+            }
+            chart.selectAll('circle')//.each(collide(.1)) //B
+              .attr("cx", function (d) { return d.x = Math.max(d.radius, Math.min(width - d.radius, d.x)); })
+              .attr("cy", function (d) { return d.y = Math.max(d.radius, Math.min(width - d.radius, d.y)); });
+          }
         }
         
         function createForceGraph() {
@@ -147,15 +120,6 @@ var bubbleGraph = view1Ctrl.directive('bubbleGraph', ['d3Service', function(d3Se
                       "<div>Total Count: " + d.value + "</div>";
             });
 
-          bubble.nodes({children:data}).filter(function(d) { return !d.children; });
-          data.forEach(function(d) {
-            d.x = Math.random() * width;
-            d.y = Math.random() * height;
-            d.radius = d.r;
-            delete d.r;
-            delete d.depth;
-            delete d.parent;
-          })
           // data.sort(function (a, b) { return b.value - a.value; });
           var nodes = chart.selectAll("circle")
             .data(data);
@@ -189,7 +153,13 @@ var bubbleGraph = view1Ctrl.directive('bubbleGraph', ['d3Service', function(d3Se
               centers.push({name: n, value: 1, colour: tiles[i].colour});
             }
           }
+          console.log(centers);
           draw('category');
+        }
+
+        function changeCategoryName(tile, index) {
+          centers[index+1].name = tile.name ? tile.name : 'category' + (index+1);
+          labels(centers);
         }
 
         function createBubbleGraph() {
@@ -227,7 +197,11 @@ var bubbleGraph = view1Ctrl.directive('bubbleGraph', ['d3Service', function(d3Se
 
         function addStandardColour() {
           chart.selectAll('circle')
-            .style('fill', function(d) { return color(d.name); });
+            .style('fill', function(d) { return color(d.name); })
+            .datum(function(d) {
+              d.category = 'testName';
+              return d;
+            });
         }
 
         function removeSpecificColours(numColours) {
@@ -238,7 +212,9 @@ var bubbleGraph = view1Ctrl.directive('bubbleGraph', ['d3Service', function(d3Se
           chart.selectAll('circle')
             .filter(function(d) {
               if (coloursToRemove.indexOf(d.colour) > -1) {
-                d.colour = undefined; // reset data to original state
+                // reset data to original state
+                d.colour = undefined; 
+                d.category = 'testName';
                 return true;
               } else return false;
             })
@@ -260,7 +236,7 @@ var bubbleGraph = view1Ctrl.directive('bubbleGraph', ['d3Service', function(d3Se
 
         function removeListener() {
           var nodes = getNodes();
-          nodes.unbind('click');
+          nodes.unbind('click').attr('cursor', 'default');
         }
 
         scope.$watch('column', function() {
@@ -269,7 +245,6 @@ var bubbleGraph = view1Ctrl.directive('bubbleGraph', ['d3Service', function(d3Se
 
         scope.$on('categories_changed', function(event, newVal, oldVal, tiles) {
           var diff = oldVal - newVal;
-          console.log(newVal, oldVal);
           if (oldVal == 0) {
             removeStandardColour();
           } else if (newVal == 0) {
@@ -287,6 +262,10 @@ var bubbleGraph = view1Ctrl.directive('bubbleGraph', ['d3Service', function(d3Se
 
         scope.$on('add_listener', function(event, tile) {
           addListener(tile);
+        });
+
+        scope.$on('change_category_name', function(event, tile, index) {
+          changeCategoryName(tile, index);
         });
       });
     }

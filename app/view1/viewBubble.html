@@ -42,7 +42,7 @@
   <md-grid-list
     md-cols="2" md-cols-sm="4" md-cols-md="6" md-cols-gt-md="6"
     md-row-height-gt-md="4:3" md-row-height="4:3"
-    md-gutter="8px" md-gutter-gt-sm="4px"   >
+    md-gutter="8px" md-gutter-gt-sm="4px" >
     <md-grid-tile 
       ng-repeat="tile in tiles"
       md-rowspan="{{tile.span.row}}"
@@ -53,7 +53,7 @@
       <div layout-fill md-ink-ripple="true" ng-click="choose(tile, $index)"></div>
       <md-grid-tile-footer>
         <md-input-container md-no-float>
-          <input ng-model="tile.name" placeholder="{{tile.colour}}">
+          <input ng-model="tile.name" ng-blur="change(tile, $index)" placeholder="{{tile.colour}}">
         </md-input-container>
       </md-grid-tile-footer>
     </md-grid-tile>

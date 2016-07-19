@@ -15,6 +15,7 @@
     "angular-material": "^1.0.9",
     "jquery": "^3.0.0",
     "d3-tip": "^0.6.7",
-    "underscore": "^1.8.3"
+    "underscore": "^1.8.3",
+    "material-design-icons": "^2.2.3"
   }
 }

@@ -3,11 +3,12 @@ var viewBar = view1Ctrl.directive('viewBubble', function() {
     scope.isIncluded = true;
     scope.isCategorized = false;
     scope.categories = 0;
-    scope.thresholds;
+    scope.categoryMap;
     scope.tiles = [];
     scope.palette = shuffle(palette('tol-rainbow', 20));
     scope.paletteIndex = 0; // to keep track of the current number of colours
     scope.selectedIndex = -1; // to keep track of which category is selected
+    scope.regexp = /^\-?\d+$/;
 
     scope.$watch('isIncluded', function(newVal) {
       if (newVal==false) {
@@ -25,6 +26,20 @@ var viewBar = view1Ctrl.directive('viewBubble', function() {
       createCategoryBox(newVal, oldVal);
       scope.$broadcast('categories_changed', newVal, oldVal, scope.tiles);
     });
+
+    scope.validate = function(tile, index) {
+      // first remove whitespace, then split into array
+      var items = tile.categoricalMap.replace(/\s/g, '').split(',');
+      console.log(items);
+      // perform some validation on the input
+      items = items.filter(function(d) {
+        if (d=="") {
+          console.log('empty item found, removing it from list...');
+          return false;
+        } else return true;
+      });
+      scope.$broadcast('filter_categories', items, index);
+    }
 
     scope.change = function(tile, index) {
       console.log(scope.tiles[index]);
@@ -45,7 +60,7 @@ var viewBar = view1Ctrl.directive('viewBubble', function() {
     }
 
     scope.$watchGroup(
-      ['isIncluded', 'isCategorized', 'categories', 'thresholds'],
+      ['isIncluded', 'isCategorized', 'categories', 'categoryMap'],
       function() {
         aggregateValues();
     })
@@ -60,7 +75,8 @@ var viewBar = view1Ctrl.directive('viewBubble', function() {
           var tile = {
             span: {row:1, col:1},
             colour: scope.palette[scope.paletteIndex],
-            name: 'category ' + (scope.paletteIndex+1)
+            name: 'category ' + (scope.paletteIndex+1),
+            categoricalMap: ''
           };
           scope.tiles.push(tile);
           scope.paletteIndex++;
@@ -82,7 +98,7 @@ var viewBar = view1Ctrl.directive('viewBubble', function() {
         aggregate.bins = {
           method: 'user_specified_categorical',
           totalBins: scope.categories,
-          numericMap: scope.thresholds
+          categoricalMap: scope.categoryMap
         }
       }
       scope.$emit('column_change', aggregate);

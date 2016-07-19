@@ -29,7 +29,7 @@ var bubbleGraph = view1Ctrl.directive('bubbleGraph', ['d3Service', function(d3Se
           //   .attr('transform', 'translate(' + options.margin_left + ',' + options.margin_top + ')');
 
         var charge = function(d) {
-          return -Math.pow(d.radius, 2.0) / 4;
+          return -Math.pow(d.radius, 2.0) / 3.5;
         }
 
         var radiusScale = d3.scale.pow()
@@ -45,8 +45,7 @@ var bubbleGraph = view1Ctrl.directive('bubbleGraph', ['d3Service', function(d3Se
         var force = d3.layout.force().size([width,height])
           .nodes(data)
           .charge(charge)
-          .gravity(-0.01)
-          .friction(0.9);
+          .gravity(-0.02);
         // variable to store the centers of the categories
         var centers = _.uniq(_.pluck(data, 'category')).map(function (d) {
           return {name: d, value: 1, colour: 'D4D4D4'};
@@ -67,8 +66,10 @@ var bubbleGraph = view1Ctrl.directive('bubbleGraph', ['d3Service', function(d3Se
         }
 
         function getCenters(vname, size, centers) {
-          var map = d3.layout.treemap().size(size).ratio(1/1); 
-          map.nodes({children: centers}); 
+          var map = d3.layout.treemap()
+            .size(size).ratio(1/1)
+            .sort(null)
+            .nodes({children: centers}); 
           return centers;
         }
 
@@ -139,7 +140,6 @@ var bubbleGraph = view1Ctrl.directive('bubbleGraph', ['d3Service', function(d3Se
 
           // draw initial 
           draw('category');
-
         }
 
         function changeCenters(newVal, oldVal, tiles) {
@@ -153,41 +153,29 @@ var bubbleGraph = view1Ctrl.directive('bubbleGraph', ['d3Service', function(d3Se
               centers.push({name: n, value: 1, colour: tiles[i].colour});
             }
           }
-          console.log(centers);
+          //update force layout by redrawing
           draw('category');
         }
 
-        function changeCategoryName(tile, index) {
-          centers[index+1].name = tile.name ? tile.name : 'category' + (index+1);
-          labels(centers);
-        }
-
-        function createBubbleGraph() {
-          var chartData = group_data(scope.column.values);
-
-          // appends data from chartData to svg element
-          var node = chart.selectAll('.node')
-            .data(bubble.nodes(chartData).filter(function(d) { return !d.children; }))
-          .enter().append('g')
-            .attr('class', 'node')
-            .attr('transform', function(d) { return 'translate(' + d.x + ',' + d.y + ')'; });
-
-          node.append('title')
-            .text(function(d) { return d.name + ': ' + format(d.value); });
-
-          node.append('circle')
-            .attr('r', function(d) { return d.r; })
-            .attr('class', 'circle')
-            .style('fill', function(d) { return color(d.name); });
-
-          node.append('text')
-            .attr('dy', '.3em')
-            .style('text-anchor', 'middle')
-            .text(function(d) { return d.name.substring(0, d.r / 3); });
+        function changeCenterName(tile, index) {
+          var oldName = centers[index+1].name;
+          var newName = tile.name ? tile.name : 'category' + (index+1);
+          centers[index+1].name = newName
+          // update the the circles within the center, so that their data is in sync 
+          // with the new category name
+          var remainingNodes = getNodes().filter(function(d) { return d.category==oldName; });
+          if (remainingNodes.length > 0) {
+            remainingNodes.datum(function(d) { 
+              d.category = newName;
+              return d;
+            });
+          }
+          //update force layout by redrawing
+          draw('category'); 
         }
 
         function getNodes() {
-          return $(chart.selectAll('circle')[0]);
+          return chart.selectAll('circle');
         }
 
         function removeStandardColour() {
@@ -223,20 +211,54 @@ var bubbleGraph = view1Ctrl.directive('bubbleGraph', ['d3Service', function(d3Se
 
         function addListener(category) {
           removeListener(); // clear all click listeners
-          var nodes = getNodes();
+          var nodes = $(getNodes()[0]);
           nodes.attr('cursor', 'pointer');
           nodes.on('click', function() {
             var data = d3.select(this).data();
             d3.select(this).style('fill', category.colour);
             data[0].category = category.name;
             data[0].colour = category.colour;
-            draw('category');
+            force.start();
           });
         }
 
         function removeListener() {
-          var nodes = getNodes();
+          var nodes = $(getNodes()[0]);
           nodes.unbind('click').attr('cursor', 'default');
+        }
+
+        function filterSpecificCategory(items, index) {
+          console.log(items,index);
+          var remainingNodes = getNodes()
+            .filter(function(d) { 
+              var match = false;
+              items.forEach(function(item) {
+                if (matchRule(d.name, item)) {
+                  match = true;
+                }
+              });
+              return match;
+            });
+          if (remainingNodes.length>0) {
+            remainingNodes.datum(function(d) { 
+              d.category = centers[index+1].name;
+              return d;
+            }).style('fill', function(d) { return centers[index+1].colour; });
+          }
+          force.start();
+        }
+
+        /* 
+        matches strings to a rule, including wildcards (*)
+          "a*b" => everything that starts with "a" and ends with "b"
+          "a*" => everything that starts with "a"
+          "*b" => everything that ends with "b"
+          "*a*" => everything that has a "a" in it
+          "*a*b*"=> everything that has a "a" in it, followed by anything, 
+            followed by a "b", followed by anything
+        */
+        function matchRule(str, rule) {
+          return new RegExp("^" + rule.split("*").join(".*") + "$").test(str);
         }
 
         scope.$watch('column', function() {
@@ -254,6 +276,7 @@ var bubbleGraph = view1Ctrl.directive('bubbleGraph', ['d3Service', function(d3Se
           }
 
           changeCenters(newVal, oldVal, tiles);
+
         });
 
         scope.$on('remove_listener', function() {
@@ -265,7 +288,11 @@ var bubbleGraph = view1Ctrl.directive('bubbleGraph', ['d3Service', function(d3Se
         });
 
         scope.$on('change_category_name', function(event, tile, index) {
-          changeCategoryName(tile, index);
+          changeCenterName(tile, index);
+        });
+
+        scope.$on('filter_categories', function(event, items, index) {
+          filterSpecificCategory(items, index);
         });
       });
     }

@@ -53,25 +53,23 @@
       <div layout-fill md-ink-ripple="true" ng-click="choose(tile, $index)">
         <md-menu md-position-mode="target-right target">
           <md-button md-menu-origin ng-click="$mdOpenMenu()">+</md-button>
-          <md-menu-content width="6">
-            <md-list>
-              <md-subheader class="md-no-sticky">Type the names of the values you want to be in this category, separated by commas</md-subheader>
-              <md-list-item>
-                <form name="testForm">
-                  <md-input-container md-no-float>
-                    <textarea ng-model="tile.categoricalMap"
-                      name="categoricalMap"
-                      placeholder="{{tile.colour}}"></textarea>
-                    <md-button ng-click="validate(tile, $index)">OK</md-button>
-                    <div ng-messages="testForm.categoricalMap.$error" role="alert">
-                      <div ng-message-exp="['pattern']">
-                        Sorry, check the format one more time! Values must be separated with commas.
-                      </div>
-                    </div>
-                  </md-input-container>
-                </form>
-              </md-list-item>
-            </md-list>
+          <md-menu-content width="4" layout-padding>
+            <form name="testForm">
+              <p>Type the names of the values you want to be in this category, separated by commas</p>
+              <div layout="row" layout-align="center center">
+                <md-input-container md-no-float>
+                  <textarea ng-model="tile.categoricalMap"
+                    name="categoricalMap"
+                    placeholder="{{tile.colour}}"></textarea>
+                  <md-button ng-click="validate(tile, $index)">OK</md-button>
+                <div ng-messages="testForm.categoricalMap.$error" role="alert">
+                  <div ng-message-exp="['pattern']">
+                    Sorry, check the format one more time! Values must be separated with commas.
+                  </div>
+                </div>
+                </md-input-container>
+              </div>
+            </form>
           </md-menu-content>
         </md-menu>
       </div>

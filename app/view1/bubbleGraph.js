@@ -214,10 +214,13 @@ var bubbleGraph = view1Ctrl.directive('bubbleGraph', ['d3Service', function(d3Se
           var nodes = $(getNodes()[0]);
           nodes.attr('cursor', 'pointer');
           nodes.on('click', function() {
-            var data = d3.select(this).data();
-            d3.select(this).style('fill', category.colour);
-            data[0].category = category.name;
-            data[0].colour = category.colour;
+            d3.select(this)
+              .style('fill', category.colour)
+              .datum(function(d) {
+                d.category = category.name;
+                d.colour = category.colour;
+                return d;
+              });
             force.start();
           });
         }
@@ -229,10 +232,12 @@ var bubbleGraph = view1Ctrl.directive('bubbleGraph', ['d3Service', function(d3Se
 
         function filterSpecificCategory(items, index) {
           console.log(items,index);
+          var center = centers[index+1];
           var remainingNodes = getNodes()
             .filter(function(d) { 
               var match = false;
               items.forEach(function(item) {
+                // if name matches with the item, include it in the list
                 if (matchRule(d.name, item)) {
                   match = true;
                 }
@@ -241,9 +246,10 @@ var bubbleGraph = view1Ctrl.directive('bubbleGraph', ['d3Service', function(d3Se
             });
           if (remainingNodes.length>0) {
             remainingNodes.datum(function(d) { 
-              d.category = centers[index+1].name;
+              d.category = center.name;
+              d.colour = center.colour;
               return d;
-            }).style('fill', function(d) { return centers[index+1].colour; });
+            }).style('fill', function(d) { return center.colour; });
           }
           force.start();
         }

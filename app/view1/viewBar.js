@@ -43,8 +43,11 @@ var viewBar = view1Ctrl.directive('viewBar', function() {
     scope.$watchGroup(
       ['isIncluded', 'isCategorized', 'categories', 'thresholds'],
       function() {
-        aggregateValues();
-    })
+        // aggregateValues();
+    });
+    scope.$on('retrieve_category_data', function(){
+      aggregateValues();
+    });
 
     function aggregateValues() {
       var aggregate = {

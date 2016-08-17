@@ -200,6 +200,7 @@ var barGraph = view1Ctrl.directive('barGraph', ['d3Service', function(d3Service)
           var histogramData = [];
           var counter = 0;
           var previous = currentData[0].x;
+          // loop through currentData, and add it to the bins in histogramData
           for (var i=0, j=0; i<currentData.length; i++) {
             if (i==0) {
               counter += currentData[i].value;
@@ -227,15 +228,15 @@ var barGraph = view1Ctrl.directive('barGraph', ['d3Service', function(d3Service)
             }
           }
           // add in last bin if not accounted for
-          if (range[j]) {
-            counter = currentData.last().value;
-            histogramData.push({
-              name: range[j-1] + '-' + range[j],
-              value: counter,
-              x: currentX(range[j-1]),
-              dx: currentX(currentData.last().x + currentData.last().dx)-currentX(range[j-1])
-            });
-          }
+          // if (range[j]) {
+          //   counter = currentData.last().value;
+          //   histogramData.push({
+          //     name: range[j-1] + '-' + range[j],
+          //     value: counter,
+          //     x: currentX(range[j-1]),
+          //     dx: currentX(currentData.last().x + currentData.last().dx)-currentX(range[j-1])
+          //   });
+          // }
 
           scope.$parent.thresholds = range; // update thresholds in parent scope
           scope.safeRefresh(scope.$parent);

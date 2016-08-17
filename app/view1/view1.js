@@ -1,6 +1,6 @@
 'use strict';
 
-var view1 = angular.module('myApp.view1', ['ngRoute','ngMaterial'])
+var view1 = angular.module('myApp.view1', ['ngRoute','ngMaterial','ngMessages'])
 
 .config(['$routeProvider', function($routeProvider) {
   $routeProvider.when('/view1', {
@@ -9,7 +9,10 @@ var view1 = angular.module('myApp.view1', ['ngRoute','ngMaterial'])
   });
 }]);
 
-var view1Ctrl = view1.controller('View1Ctrl', function ($scope, $timeout, $mdSidenav, $log, $http) {
+var view1Ctrl = view1.controller(
+  'View1Ctrl', ['$scope', '$timeout', '$mdSidenav', '$log', '$http', 'columnDataService',
+  function ($scope, $timeout, $mdSidenav, $log, $http, data) {
+
   $http.get('data/small2.json').then(parseData)
   $scope.toggleLeft = buildDelayedToggler('left');
   $scope.toggleRight = buildToggler('right');
@@ -22,33 +25,44 @@ var view1Ctrl = view1.controller('View1Ctrl', function ($scope, $timeout, $mdSid
     $scope.whichActive = columnName;
   }
   $scope.submit = function() {
-    validateData(scope.outputData);
-    var jsonSerializedData = JSON.stringify(scope.outputData);
-    $http.post(url, jsonSerializedData)
+    // send signal to child scopes, ordering them to aggregate all the 
+    // column data and send it back up to the parent scope
+    $scope.$broadcast('retrieve_category_data'); 
   }
-  $scope.$on('column_change', updateData);
+  $scope.$on('column_change', updateOutputData);
 
-  function updateData(event, obj) {
+  function updateOutputData(event, obj) {
     // find and replace current element in array with new element
-    var index = -1;
-    $scope.outputData.columns.forEach(function(d, i) {
-      if (obj.name==d.name) index = i;
-    });
-    if (index != -1) {
-      $scope.outputData.columns.splice(index, 1);
-      $scope.outputData.columns.push(obj);
-    } else {
-      $scope.outputData.columns.push(obj);
+    // var index = -1;
+    // $scope.outputData.columns.forEach(function(d, i) {
+    //   if (obj.name==d.name) index = i;
+    // });
+    // if (index != -1) {
+    //   $scope.outputData.columns.splice(index, 1); 
+    // }
+    $scope.outputData.columns.push(obj);
+
+    // once all columns have been updated, validate and sent POST request
+    if ($scope.outputData.columns.length == $scope.columns.length) {
+      sendPOSTRequest();
+      $scope.outputData = {}; // reset data
     }
   }
 
+  function sendPOSTRequest() {
+    validateData($scope.outputData);
+    var jsonSerializedData = JSON.stringify($scope.outputData);
+    $http.post(url, jsonSerializedData);
+  }
+
   function parseData(res) {
-    var data = res.data;
-    $scope.columns = data.columns;
+    // var data = res.data;
+    data.setColumnData(res.data);
+    $scope.columns = data.getColumnData().columns;
     $scope.whichActive = $scope.columns[0].name;
     // update outputData
-    $scope.outputData.numberOfColumns = data.numberOfColumns;
-    $scope.outputData.dataSize = data.dataSize;
+    $scope.outputData.numberOfColumns = data.getColumnData().numberOfColumns;
+    $scope.outputData.dataSize = data.getColumnData().dataSize;
     $scope.outputData.columns = [];
   }
 
@@ -95,7 +109,7 @@ var view1Ctrl = view1.controller('View1Ctrl', function ($scope, $timeout, $mdSid
         });
     }
   }
-});
+}]);
 
 var leftCtrl = view1.controller('LeftCtrl', function ($scope, $timeout, $mdSidenav, $log) {
   $scope.close = function () {

@@ -1,4 +1,6 @@
-var bubbleGraph = view1Ctrl.directive('bubbleGraph', ['d3Service', function(d3Service) {
+var bubbleGraph = view1Ctrl.directive(
+  'bubbleGraph', ['d3Service', 'columnDataService', function(d3Service, data2) {
+
   return {
     restrict: 'EA',
     scope: {
@@ -56,7 +58,7 @@ var bubbleGraph = view1Ctrl.directive('bubbleGraph', ['d3Service', function(d3Se
             return {
               name: key, 
               value: data[key],
-              category: 'testName',
+              category: 'Not Categorized',
               x: Math.random() * width,
               y: Math.random() * height,
               radius: radiusScale(data[key])
@@ -78,6 +80,12 @@ var bubbleGraph = view1Ctrl.directive('bubbleGraph', ['d3Service', function(d3Se
           force.on("tick", tick(centers, varname));
           labels(centers);
           force.start();
+          scope.$parent.data = data; // update data
+        }
+
+        function startForce() {
+          force.start();
+          scope.$parent.data = data; // update data
         }
 
         function labels(centers) {
@@ -187,7 +195,7 @@ var bubbleGraph = view1Ctrl.directive('bubbleGraph', ['d3Service', function(d3Se
           chart.selectAll('circle')
             .style('fill', function(d) { return color(d.name); })
             .datum(function(d) {
-              d.category = 'testName';
+              d.category = 'Not Categorized';
               return d;
             });
         }
@@ -202,7 +210,7 @@ var bubbleGraph = view1Ctrl.directive('bubbleGraph', ['d3Service', function(d3Se
               if (coloursToRemove.indexOf(d.colour) > -1) {
                 // reset data to original state
                 d.colour = undefined; 
-                d.category = 'testName';
+                d.category = 'Not Categorized';
                 return true;
               } else return false;
             })
@@ -221,7 +229,7 @@ var bubbleGraph = view1Ctrl.directive('bubbleGraph', ['d3Service', function(d3Se
                 d.colour = category.colour;
                 return d;
               });
-            force.start();
+            startForce();
           });
         }
 
@@ -251,7 +259,7 @@ var bubbleGraph = view1Ctrl.directive('bubbleGraph', ['d3Service', function(d3Se
               return d;
             }).style('fill', function(d) { return center.colour; });
           }
-          force.start();
+          startForce();
         }
 
         /* 

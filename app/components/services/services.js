@@ -1,6 +1,6 @@
 'use strict';
 
-angular.module('d3', [])
+angular.module('services', [])
   .factory('d3Service', ['$document', '$q', '$rootScope', function($document, $q, $rootScope) {
     var d = $q.defer();
     function onScriptLoad() {
@@ -30,5 +30,32 @@ angular.module('d3', [])
 
     return {
       d3: function() { return d.promise; }
+    };
+  }])
+
+  // Service to facilitate the data used thoughout the application
+  .factory('columnDataService', ['$rootScope', function($rootScope) {
+    var columnData = {}; // private variable to store raw data from the JSON file
+    var outputData = {}; // private variable to store the final JSON output
+    var preferencesData = {}; // private variable to store the user preferences for each column
+
+    function getColumnData() {
+      return columnData;
+    }
+    function setColumnData(data) {
+      columnData = data;
+    }
+    function getPreferencesData() {
+      return preferencesData;
+    }
+    function setPreferencesByColumn(name, data) {
+      preferencesData[name] = data;
+    }
+
+    return {
+      getColumnData: getColumnData,
+      setColumnData: setColumnData,
+      getPreferencesData: getPreferencesData,
+      setPreferencesByColumn: setPreferencesByColumn
     };
   }]); 

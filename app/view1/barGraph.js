@@ -2,7 +2,7 @@ Array.prototype.last = function() {
   return this[this.length - 1];
 };
 
-var barGraph = view1Ctrl.directive('barGraph', ['d3Service', function(d3Service) {
+var barGraph = view1Ctrl.directive('barGraph', ['d3Service', 'columnDataService', function(d3Service, dataSvc) {
   function groupData(histogram, binRange, numBins) {
     var binSize = Math.round(histogram.length/numBins);
     var chartData = [];
@@ -51,9 +51,7 @@ var barGraph = view1Ctrl.directive('barGraph', ['d3Service', function(d3Service)
 
   return {
     restrict: 'EA',
-    // scope: {
-    //   column: '=column'
-    // },
+    scope: true,
     template: '<svg class="chart_{{column.name}} chart" layout></svg><svg class="chart_{{column.name}}_histogram chart" layout></svg>',
     // templateUrl: 'view1/barGraph.html',
     link: function(scope, element, attrs) {
@@ -239,7 +237,7 @@ var barGraph = view1Ctrl.directive('barGraph', ['d3Service', function(d3Service)
           // }
 
           scope.$parent.thresholds = range; // update thresholds in parent scope
-          scope.safeRefresh(scope.$parent);
+          // scope.safeRefresh(scope.$parent);
           scope.createHistogram(histogramData);
         }
 

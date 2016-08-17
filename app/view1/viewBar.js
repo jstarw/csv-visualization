@@ -1,4 +1,4 @@
-var viewBar = view1Ctrl.directive('viewBar', function() {
+var viewBar = view1Ctrl.directive('viewBar', ['columnDataService', function(dataSvc) {
   function link(scope, element, attrs) {
     scope.linearScale = false;
     scope.isIncluded = true;
@@ -31,7 +31,7 @@ var viewBar = view1Ctrl.directive('viewBar', function() {
       }
     });
     scope.$watch('isEvenlyDistributed', function(newVal) {
-      if (newVal==false && scope.categories) {
+      if (newVal==false && scope.categories) { 
         scope.$broadcast('add_draggable');
       } else if (newVal==true && scope.categories) {
         scope.$broadcast('remove_draggable');
@@ -43,12 +43,10 @@ var viewBar = view1Ctrl.directive('viewBar', function() {
     scope.$watchGroup(
       ['isIncluded', 'isCategorized', 'categories', 'thresholds'],
       function() {
-        // aggregateValues();
-    });
-    scope.$on('retrieve_category_data', function(){
-      aggregateValues();
+        aggregateValues();
     });
 
+    // builds object that will be sent in final job object
     function aggregateValues() {
       var aggregate = {
         name: scope.column.name,
@@ -66,7 +64,8 @@ var viewBar = view1Ctrl.directive('viewBar', function() {
           numericMap: scope.thresholds
         }
       }
-      scope.$emit('column_change', aggregate);
+      // scope.$emit('column_change', aggregate);
+      dataSvc.setPreferencesByColumn(scope.column.name, aggregate);
     }
   }
   return {
@@ -77,4 +76,4 @@ var viewBar = view1Ctrl.directive('viewBar', function() {
     },
     link: link
   }
-});
+}]);

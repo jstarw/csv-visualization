@@ -11,7 +11,7 @@ var view1 = angular.module('myApp.view1', ['ngRoute','ngMaterial','ngMessages'])
 
 var view1Ctrl = view1.controller(
   'View1Ctrl', ['$scope', '$timeout', '$mdSidenav', '$log', '$http', 'columnDataService',
-  function ($scope, $timeout, $mdSidenav, $log, $http, data) {
+  function ($scope, $timeout, $mdSidenav, $log, $http, dataSvc) {
 
   $http.get('data/small2.json').then(parseData)
   $scope.toggleLeft = buildDelayedToggler('left');
@@ -27,19 +27,12 @@ var view1Ctrl = view1.controller(
   $scope.submit = function() {
     // send signal to child scopes, ordering them to aggregate all the 
     // column data and send it back up to the parent scope
-    $scope.$broadcast('retrieve_category_data'); 
+    // $scope.$broadcast('retrieve_category_data'); 
+    console.log(dataSvc.getPreferencesData());
   }
   $scope.$on('column_change', updateOutputData);
 
   function updateOutputData(event, obj) {
-    // find and replace current element in array with new element
-    // var index = -1;
-    // $scope.outputData.columns.forEach(function(d, i) {
-    //   if (obj.name==d.name) index = i;
-    // });
-    // if (index != -1) {
-    //   $scope.outputData.columns.splice(index, 1); 
-    // }
     $scope.outputData.columns.push(obj);
 
     // once all columns have been updated, validate and sent POST request
@@ -57,12 +50,11 @@ var view1Ctrl = view1.controller(
 
   function parseData(res) {
     // var data = res.data;
-    data.setColumnData(res.data);
-    $scope.columns = data.getColumnData().columns;
+    dataSvc.setColumnData(res.data);
+    $scope.columns = dataSvc.getColumnData().columns;
     $scope.whichActive = $scope.columns[0].name;
-    // update outputData
-    $scope.outputData.numberOfColumns = data.getColumnData().numberOfColumns;
-    $scope.outputData.dataSize = data.getColumnData().dataSize;
+    $scope.outputData.numberOfColumns = dataSvc.getColumnData().numberOfColumns;
+    $scope.outputData.dataSize = dataSvc.getColumnData().dataSize;
     $scope.outputData.columns = [];
   }
 

@@ -50,7 +50,7 @@
       style="background:{{'#'+tile.colour}}"
       ng-class="{selected: $index==selectedIndex}"
       class="bubble-category">
-      <div layout-fill md-ink-ripple="true" ng-click="choose(tile, $index)">
+      <div layout-fill md-ink-ripple="true" ng-click="selectTile(tile, $index)">
         <md-menu>
           <md-button md-menu-origin ng-click="$mdOpenMenu()">+</md-button>
           <md-menu-content width="4" layout-padding>
@@ -79,7 +79,7 @@
 
       <md-grid-tile-footer>
         <md-input-container md-no-float>
-          <input ng-model="tile.name" ng-blur="change(tile, $index)" placeholder="{{tile.colour}}">
+          <input ng-model="tile.name" ng-blur="changeTileName(tile, $index)" placeholder="{{tile.colour}}">
         </md-input-container>
       </md-grid-tile-footer>
     </md-grid-tile>

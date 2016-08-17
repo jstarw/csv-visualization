@@ -1,11 +1,9 @@
 var bubbleGraph = view1Ctrl.directive(
-  'bubbleGraph', ['d3Service', 'columnDataService', function(d3Service, data2) {
+  'bubbleGraph', ['d3Service', 'columnDataService', function(d3Service, dataSvc) {
 
   return {
     restrict: 'EA',
-    scope: {
-      column: '=column'
-    },
+    scope: true,
     template: '<svg class="chart_{{column.name}} chart" layout></svg>',
     // templateUrl: 'view1/bubbleGraph.html',
     link: function(scope, element, attrs) {
@@ -81,11 +79,13 @@ var bubbleGraph = view1Ctrl.directive(
           labels(centers);
           force.start();
           scope.$parent.data = data; // update data
+          scope.$parent.aggregateValues();
         }
 
         function startForce() {
           force.start();
           scope.$parent.data = data; // update data
+          scope.$parent.aggregateValues();
         }
 
         function labels(centers) {
@@ -239,7 +239,6 @@ var bubbleGraph = view1Ctrl.directive(
         }
 
         function filterSpecificCategory(items, index) {
-          console.log(items,index);
           var center = centers[index+1];
           var remainingNodes = getNodes()
             .filter(function(d) { 

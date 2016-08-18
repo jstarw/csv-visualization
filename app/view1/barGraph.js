@@ -3,7 +3,7 @@ Array.prototype.last = function() {
 };
 
 var barGraph = view1Ctrl.directive('barGraph', ['d3Service', 'columnDataService', function(d3Service, dataSvc) {
-  function groupData(histogram, binRange, numBins) {
+  function groupData2(histogram, binRange, numBins) {
     var binSize = Math.round(histogram.length/numBins);
     var chartData = [];
     var counter = 0;
@@ -36,14 +36,16 @@ var barGraph = view1Ctrl.directive('barGraph', ['d3Service', 'columnDataService'
     return chartData;
   }
 
-  function groupDataLinear(histogram, binRange) {
+  // Function that takes the histogram values and the bin ranges and combines them into a 
+  // single array of objects. Each object will represent a discrete bin.
+  function groupHistogramData(histogram, binRange) {
     var chartData = [];
     for (var i=0; i<histogram.length; i++) {
       chartData.push({
-        name: binRange[i] + '-' + binRange[i+1],
-        value: histogram[i],
-        x: binRange[i],
-        dx: binRange[i+1]-binRange[i]
+        name: binRange[i] + '-' + binRange[i+1], // name of the bin, which are the boundaries
+        value: histogram[i], // the count of how many numbers fall into this specific bin
+        x: binRange[i], // the position of the bin, used by bar chart
+        dx: binRange[i+1]-binRange[i] // width of the bin, used by bar chart.
       });
     }
     return chartData;
@@ -53,14 +55,13 @@ var barGraph = view1Ctrl.directive('barGraph', ['d3Service', 'columnDataService'
     restrict: 'EA',
     scope: true,
     template: '<svg class="chart_{{column.name}} chart" layout></svg><svg class="chart_{{column.name}}_histogram chart" layout></svg>',
-    // templateUrl: 'view1/barGraph.html',
     link: function(scope, element, attrs) {
       d3Service.d3().then(function(d3) {
 
         var options = {
-                width: 1000,      height: 400,       margin_top: 20, 
-                margin_right: 40, margin_bottom: 30, margin_left: 40
-            }
+          width: 1000,      height: 400,       margin_top: 20, 
+          margin_right: 40, margin_bottom: 30, margin_left: 40
+        }
 
         var selector = '.chart_'+scope.column.name;
         var selectorHist = selector + '_histogram';
@@ -77,8 +78,10 @@ var barGraph = view1Ctrl.directive('barGraph', ['d3Service', 'columnDataService'
           .append('g')
             .attr('transform', 'translate(' + options.margin_left + ',' + options.margin_top + ')');
 
-        var chartData = groupData(scope.column.hist, scope.column.binRange, 100);
-        var chartDataLinear = groupDataLinear(scope.column.histLinear, scope.column.binRangeLinear);
+        // var chartData = groupData2(scope.column.hist, scope.column.binRange, 100);
+        var groupedData = groupHistogramData(scope.column.hist, scope.column.binRange);
+        var chartData =  createHistogramFromRange(createEvenlyDistributedRange(100, groupedData), groupedData);
+        var chartDataLinear = groupHistogramData(scope.column.histLinear, scope.column.binRangeLinear);
         var threshold = chartData.map(function(d) { return d.x; });
         threshold.push(scope.column.binRange.last()); // add last item to threshold
 
@@ -91,10 +94,11 @@ var barGraph = view1Ctrl.directive('barGraph', ['d3Service', 'columnDataService'
           .range([0, width])
           .domain([scope.column.binRangeLinear[0], scope.column.binRangeLinear.last()]);
 
+        // quantile scale for histogram equalized data
         var xQuantile = d3.scale.quantile()
           .domain(threshold)
           .range(d3.range(0,width+1,width/chartData.length));
-
+        // reverse mapping for quantile scale, used for calculating bin boundaries
         var reverseQuantile = {};
         xQuantile.range().forEach(function (x, i) {
           var pair = xQuantile.invertExtent(x).toString();
@@ -104,9 +108,8 @@ var barGraph = view1Ctrl.directive('barGraph', ['d3Service', 'columnDataService'
         var currentData; // value to store either chartData or chartDataLinear
         var currentX;
         var currentXAxis; // value to store either xLinear or xOrdinal
-        var currentThresholds; // value to store the range of bins
 
-        scope.changeScale = function(isLinear) {
+        function changeScale(isLinear) {
           switch(isLinear) {
             case true:
               currentData = chartDataLinear;
@@ -129,13 +132,15 @@ var barGraph = view1Ctrl.directive('barGraph', ['d3Service', 'columnDataService'
           }
         }
 
-        scope.removeBarGraph = function() {
+        // removes the entire bar graph from svg
+        function removeBarGraph() {
           chart.selectAll('rect').remove();
           chart.selectAll('.y.axis').remove();
           chart.selectAll('.x.axis').remove();
         }
 
-        scope.createBarGraph = function(isLinear) {
+        // creates bar graph and tooltip
+        function createBarGraph(isLinear) {
           var y = d3.scale.linear()
             .range([height, 0])
             .domain([0, d3.max(currentData, function(d) { return d.value; })]);
@@ -153,8 +158,8 @@ var barGraph = view1Ctrl.directive('barGraph', ['d3Service', 'columnDataService'
               return "<div>Name: " + d.name + "</div><div>Value: " + d.value + "</div>";
             });
           // appends data from chartData to svg element
-          scope.removeBarGraph();
-          scope.removeDraggable();
+          removeBarGraph();
+          removeDraggableLines();
 
           var bar = chart.selectAll('g')
             .data(currentData)
@@ -191,76 +196,62 @@ var barGraph = view1Ctrl.directive('barGraph', ['d3Service', 'columnDataService'
             .append('text')
             .attr('x', 10)
             .attr('y', 30)
-            .text('Values in column '+scope.column.name);
+            .text('Values in column ' + scope.column.name);
         }
 
-        scope.createHistogramFromRange = function(range) {
+        // generate the histogram data from dataSet and the bin thresholds
+        function createHistogramFromRange(range, dataSet) {
           var histogramData = [];
           var counter = 0;
-          var previous = currentData[0].x;
-          // loop through currentData, and add it to the bins in histogramData
-          for (var i=0, j=0; i<currentData.length; i++) {
+          var previous = dataSet[0].x;
+          // loop through dataSet, and add it to the bins in histogramData
+          for (var i=0, j=0; i<dataSet.length; i++) {
             if (i==0) {
-              counter += currentData[i].value;
+              counter += dataSet[i].value;
               j++;
-            } else if (range[j] == currentData[i].x) {
+            } else if (range[j] == dataSet[i].x) {
               histogramData.push({
                 name: range[j-1] + '-' + range[j],
                 value: counter,
-                x: currentX(range[j-1]),
-                dx: currentX(currentData[i].x)-currentX(range[j-1])
+                x: range[j-1],
+                dx: dataSet[i].x-range[j-1]
               });
               j++;
-              counter = currentData[i].value;
-              previous = currentData[i].x;
-            } else if (i == currentData.length-1) { // need to add last element in array
-              counter += currentData[i].value;
+              counter = dataSet[i].value;
+              previous = dataSet[i].x;
+            } else if (i == dataSet.length-1) { // need to add last element in array
+              counter += dataSet[i].value;
               histogramData.push({
                 name: range[j-1] + '-' + range[j],
                 value: counter,
-                x: currentX(range[j-1]),
-                dx: currentX(currentData[i].x + currentData[i].dx)-currentX(range[j-1])
+                x: range[j-1],
+                dx: dataSet[i].x + dataSet[i].dx-range[j-1]
               });
             } else {
-              counter += currentData[i].value;
+              counter += dataSet[i].value;
             }
           }
-          // add in last bin if not accounted for
-          // if (range[j]) {
-          //   counter = currentData.last().value;
-          //   histogramData.push({
-          //     name: range[j-1] + '-' + range[j],
-          //     value: counter,
-          //     x: currentX(range[j-1]),
-          //     dx: currentX(currentData.last().x + currentData.last().dx)-currentX(range[j-1])
-          //   });
-          // }
-
-          scope.$parent.thresholds = range; // update thresholds in parent scope
-          // scope.safeRefresh(scope.$parent);
-          scope.createHistogram(histogramData);
+          return histogramData;
         }
 
-        scope.safeRefresh = function(sc) {
-          if (sc.$root.$$phase != '$apply' && sc.$root.$$phase != '$digest') sc.$apply();
-        }
-
-        scope.createHistogramEvenly = function(bins) {
-          var binSize = currentData.length / bins;
+        // creates the bin ranges from a dataset given the total number of bins
+        function createEvenlyDistributedRange(bins, dataSet) {
+          var binSize = dataSet.length / bins;
           var binCounter = binSize;
-          var range = [currentData[0].x];
-          for (var i=1; i<currentData.length; i++) {
+          var range = [dataSet[0].x];
+          for (var i=1; i<dataSet.length; i++) {
             if (i>=binCounter) {
-              range.push(currentData[i].x);
+              range.push(dataSet[i].x);
               binCounter += binSize;
             }
           }
-          range.push(currentX.domain().last()); // include right bound
-          scope.createHistogramFromRange(range);
+          range.push(dataSet.last().x+dataSet.last().dx); // include right bound
+          return range;
         }
 
-        scope.createHistogram = function(binThresholds) {
-          scope.removeHistogram();
+        // generate the histogram graph below the bar graph 
+        function createHistogramGraph(binThresholds) {
+          removeHistogramChart();
 
           var y1 = d3.scale.linear()
             .domain([0, d3.max(binThresholds, function(d) { return d.value; })])
@@ -285,8 +276,8 @@ var barGraph = view1Ctrl.directive('barGraph', ['d3Service', 'columnDataService'
               .attr('class', 'bin-bar')
               .append('rect')
               .attr('y', height)
-              .attr('x', function(d) { return d.x; })
-              .attr('width', function(d) { return d.dx-1; })
+              .attr('x', function(d) { return currentX(d.x); })
+              .attr('width', function(d) { return currentX(d.dx+d.x)-currentX(d.x)-1; })
               .attr('height', 0)
               .call(tooltip)
               .on('mouseover', tooltip.show)
@@ -319,7 +310,8 @@ var barGraph = view1Ctrl.directive('barGraph', ['d3Service', 'columnDataService'
             .append('text')
         }
 
-        scope.removeHistogram = function() {
+        // removes histogram chart from svg
+        function removeHistogramChart() {
           histogramChart.selectAll('.bin-bar').remove();
           histogramChart.selectAll('.line').remove();
           histogramChart.selectAll('.y.axis').remove();
@@ -329,15 +321,23 @@ var barGraph = view1Ctrl.directive('barGraph', ['d3Service', 'columnDataService'
             .attr('height', 0);
         }
 
-        scope.addDraggable = function() {
+        // adds the lines that the user can use to change the bin thresholds
+        function addDraggableLines() {
           var drag = d3.behavior.drag()
             .origin(Object)
             .on("drag", dragMove)
-            .on("dragend", updateHistogram);
+            .on("dragend", updateHistogram); // update data when finished dragging
 
           var barWidth = width / currentData.length;
 
-          var data = histogramChart.selectAll('.bin-bar').data();
+          // data is the same as the histogram data; however, the x and dx values are now 
+          // retpresented with the x-scale applied. This is to make it easier for determining
+          // the lines position.
+          var data = histogramChart.selectAll('.bin-bar').data().map(function(d) {
+            d.x = currentX(d.x);
+            d.dx = currentX(d.dx+d.x)-currentX(d.x);
+            return d;
+          });
           data = data.slice(0,data.length-1); //remove first elem so extra line doesnt appear
           var dragLineGroup = chart.append("g")
             .attr("class", "bin-limits")
@@ -405,6 +405,7 @@ var barGraph = view1Ctrl.directive('barGraph', ['d3Service', 'columnDataService'
               .attr("x2", d.x);
           }
 
+          // updates the histogram data and recreates the histogram graph
           function updateHistogram() {
             var data = chart.selectAll('.bin-limits .drag').data();
             var binThresholds = [currentData[0].x];
@@ -422,38 +423,49 @@ var barGraph = view1Ctrl.directive('barGraph', ['d3Service', 'columnDataService'
               binThresholds.push(currentX.domain().last());
             }
             var binThresholdsSorted = binThresholds.sort(function(a, b){return a-b});
-            scope.createHistogramFromRange(binThresholdsSorted);  
+            var histogramData = createHistogramFromRange(binThresholdsSorted, currentData);
+            scope.$parent.thresholds = binThresholdsSorted; // update thresholds in parent scope
+            createHistogramGraph(histogramData);
           }
         }
 
-        scope.removeDraggable = function() {
+        function removeDraggableLines() {
           chart.selectAll('.bin-limits').remove();
         }
 
+        // initializes the bar graph, and sets the current scale as linear
         scope.$watch('column', function(column) {
-          scope.changeScale(scope.linearScale);
-          scope.createBarGraph(scope.linearScale);
+          changeScale(scope.linearScale); // scope.linearScale comes from parent
+          createBarGraph(scope.linearScale);
         });
 
+        // called when the scale changes between linear and quantile
         scope.$on('change_scale', function(event, value) {
-          scope.changeScale(value);
-          scope.createBarGraph(value);
+          changeScale(value);
+          createBarGraph(value);
         });
 
+        // called when the user changes number of categories/bins
         scope.$on('bin_number_changed', function(event, value) {
-          scope.createHistogramEvenly(value);
+          var range = createEvenlyDistributedRange(value, currentData);
+          var histogramData = createHistogramFromRange(range, currentData);
+          scope.$parent.thresholds = range; // update thresholds in parent scope
+          createHistogramGraph(histogramData);
         });
 
+        // called when user does not categorize column
         scope.$on('remove_histogram', function() {
-          scope.removeHistogram();
+          removeHistogramChart();
         });
 
+        // called when user chooses to specify bin boundaries
         scope.$on('add_draggable', function() {
-          scope.addDraggable();
+          addDraggableLines();
         });
 
+        // called when evenly distributed checkbox is checked
         scope.$on('remove_draggable', function() {
-          scope.removeDraggable();
+          removeDraggableLines();
         });
       });
     }

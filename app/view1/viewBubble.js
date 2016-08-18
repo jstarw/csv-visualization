@@ -91,6 +91,7 @@ var viewBar = view1Ctrl.directive('viewBubble', ['columnDataService', function(d
             categoricalMap: buildCategoricalMap()
           }
         }
+        // saves the aggregated values into the data service 
         data.setPreferencesByColumn(scope.column.name, aggregate);
       }
 

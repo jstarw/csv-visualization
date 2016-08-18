@@ -10,10 +10,10 @@ var view1 = angular.module('myApp.view1', ['ngRoute','ngMaterial','ngMessages'])
 }]);
 
 var view1Ctrl = view1.controller(
-  'View1Ctrl', ['$scope', '$timeout', '$mdSidenav', '$log', '$http', 'columnDataService',
-  function ($scope, $timeout, $mdSidenav, $log, $http, dataSvc) {
+  'View1Ctrl', ['$scope', '$timeout', '$mdSidenav', '$mdDialog', '$log', '$http', 'columnDataService',
+  function ($scope, $timeout, $mdSidenav, $mdDialog, $log, $http, dataSvc) {
 
-  $http.get('data/small2.json').then(parseData)
+  $http.get('data/small2.json').then(parseData); // GET request
   $scope.toggleLeft = buildDelayedToggler('left');
   $scope.toggleRight = buildToggler('right');
   $scope.outputData = {}; // JSON Object to be sent with the POST request
@@ -21,35 +21,34 @@ var view1Ctrl = view1.controller(
   $scope.isOpenRight = function(){
     return $mdSidenav('right').isOpen();
   }
+
   $scope.switchView = function(columnName) {
     $scope.whichActive = columnName;
   }
+
   $scope.submit = function() {
-    // send signal to child scopes, ordering them to aggregate all the 
-    // column data and send it back up to the parent scope
-    // $scope.$broadcast('retrieve_category_data'); 
+    // get the user preferences from the data service and send through a POST request
     console.log(dataSvc.getPreferencesData());
-  }
-  $scope.$on('column_change', updateOutputData);
-
-  function updateOutputData(event, obj) {
-    $scope.outputData.columns.push(obj);
-
-    // once all columns have been updated, validate and sent POST request
-    if ($scope.outputData.columns.length == $scope.columns.length) {
-      sendPOSTRequest();
-      $scope.outputData = {}; // reset data
-    }
+    var preferences = dataSvc.getPreferencesData();
+    $scope.outputData.columns = Object.keys(preferences).map(function(key) {
+      return preferences[key];
+    });
+    sendPOSTRequest();
   }
 
   function sendPOSTRequest() {
     validateData($scope.outputData);
     var jsonSerializedData = JSON.stringify($scope.outputData);
-    $http.post(url, jsonSerializedData);
+    var url = 'http://test.com';
+    $http.post(url, jsonSerializedData).then(function(response) {
+      showAlert('The configurations have been successfully submitted.');
+    }, function(error) {
+      console.log(error);
+      showAlert('Something went wrong... ' + error.statusText);
+    });
   }
 
   function parseData(res) {
-    // var data = res.data;
     dataSvc.setColumnData(res.data);
     $scope.columns = dataSvc.getColumnData().columns;
     $scope.whichActive = $scope.columns[0].name;
@@ -61,6 +60,22 @@ var view1Ctrl = view1.controller(
   function validateData(data) {
     
   }
+
+  function showAlert(message) {
+    // Appending dialog to document.body to cover sidenav in docs app
+    // Modal dialogs should fully cover application
+    // to prevent interaction outside of dialog
+    $mdDialog.show(
+      $mdDialog.alert()
+        .parent(angular.element(document.querySelector('#popupContainer')))
+        .clickOutsideToClose(true)
+        // .title('Successfully submitted')
+        .textContent(message)
+        .ariaLabel('Alert Submit')
+        .ok('Got it!')
+        // .targetEvent(ev)
+    );
+  };
   /**
    * Supplies a function that will continue to operate until the
    * time is up.

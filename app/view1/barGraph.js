@@ -3,54 +3,6 @@ Array.prototype.last = function() {
 };
 
 view1Ctrl.directive('barGraph', ['d3Service', function(d3Service) {
-  function groupData2(histogram, binRange, numBins) {
-    var binSize = Math.round(histogram.length/numBins);
-    var chartData = [];
-    var counter = 0;
-    var zeroCounter = 0;
-    for (var i=0; i<histogram.length; i++) {
-      if (i==0) {
-        counter += histogram[i];
-      } else if (i%binSize==0 && counter==0) {
-        zeroCounter++;
-      } else if (i%binSize==0) {
-        chartData.push({
-          name: binRange[i-(zeroCounter+1)*binSize]+'-'+binRange[i], 
-          value: counter,
-          x: binRange[i-(zeroCounter+1)*binSize],
-          dx: binRange[i]-binRange[i-(zeroCounter+1)*binSize]
-        });
-        counter = zeroCounter = 0;
-      } else if (i==histogram.length-1) {
-        counter += histogram[i];
-        chartData.push({
-          name: binRange[i-(zeroCounter+1)*binSize]+'-'+binRange[i+1], 
-          value: counter,
-          x: binRange[i-(zeroCounter+1)*binSize],
-          dx: binRange[i+1]-binRange[i-(zeroCounter+1)*binSize]
-        });
-      } else {
-        counter += histogram[i];
-      }
-    }
-    return chartData;
-  }
-
-  // Function that takes the histogram values and the bin ranges and combines them into a 
-  // single array of objects. Each object will represent a discrete bin.
-  function groupHistogramData(histogram, binRange) {
-    var chartData = [];
-    for (var i=0; i<histogram.length; i++) {
-      chartData.push({
-        name: binRange[i] + '-' + binRange[i+1], // name of the bin, which are the boundaries
-        value: histogram[i], // the count of how many numbers fall into this specific bin
-        x: binRange[i], // the position of the bin, used by bar chart
-        dx: binRange[i+1]-binRange[i] // width of the bin, used by bar chart.
-      });
-    }
-    return chartData;
-  }
-
   return {
     restrict: 'EA',
     scope: true,
@@ -80,7 +32,6 @@ view1Ctrl.directive('barGraph', ['d3Service', function(d3Service) {
           .append('g')
             .attr('transform', 'translate(' + options.margin_left + ',' + options.margin_top + ')');
 
-        // var chartData = groupData2(scope.column.hist, scope.column.binRange, 100);
         var groupedData = groupHistogramData(scope.column.hist, scope.column.binRange);
         var chartData =  createHistogramFromRange(createEvenlyDistributedRange(100, groupedData), groupedData);
         var chartDataLinear = groupHistogramData(scope.column.histLinear, scope.column.binRangeLinear);
@@ -106,6 +57,21 @@ view1Ctrl.directive('barGraph', ['d3Service', function(d3Service) {
         var currentData; // value to store either chartData or chartDataLinear
         var currentX; // value to store either xLinear or xQuantile
         var currentXAxis; // value to store either xLinear or xOrdinal
+
+        // Function that takes the histogram values and the bin ranges and combines them into a
+        // single array of objects. Each object will represent a discrete bin.
+        function groupHistogramData(histogram, binRange) {
+          var chartData = [];
+          for (var i=0; i<histogram.length; i++) {
+              chartData.push({
+                  name: binRange[i] + '-' + binRange[i+1], // name of the bin, which are the boundaries
+                  value: histogram[i], // the count of how many numbers fall into this specific bin
+                  x: binRange[i], // the position of the bin, used by bar chart
+                  dx: binRange[i+1]-binRange[i] // width of the bin, used by bar chart.
+              });
+          }
+          return chartData;
+        }
 
         // sets the x axis scale and the currentData depending on scope.linearScale
         function changeScale(isLinear) {

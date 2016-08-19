@@ -1,5 +1,5 @@
-var bubbleGraph = view1Ctrl.directive(
-  'bubbleGraph', ['d3Service', 'columnDataService', function(d3Service, dataSvc) {
+view1Ctrl.directive(
+  'bubbleGraph', ['d3Service', function(d3Service) {
 
   return {
     restrict: 'EA',
@@ -15,14 +15,13 @@ var bubbleGraph = view1Ctrl.directive(
         var options = {
           width: 1000,      height: 1000,       margin_top: 0, 
           margin_right: 40, margin_bottom: 0, margin_left: 40
-        }
+        };
 
         // variables for svg element
-        var width  = options.width  
+        var width  = options.width,
             height = options.height,
             selector = '.chart_'+scope.column.name,
-            color = d3.scale.category20c(),
-            format = d3.format(',d');
+            color = d3.scale.category20c();
 
         var chart = d3.select(selector)
           .attr('width', options.width)
@@ -35,8 +34,6 @@ var bubbleGraph = view1Ctrl.directive(
           .range([10, 100]);
         var data = group_data(scope.column.values);
         var damper = 0.2;
-        var padding = 4;
-        var maxRadius = d3.max(_.pluck(data, 'radius'));
         var force = d3.layout.force().size([width,height])
           .nodes(data)
           .charge(function(d) {
@@ -52,7 +49,7 @@ var bubbleGraph = view1Ctrl.directive(
         // Each object in the array represents a discrete bubble.
         // The data is then used by the force graph to create the bubbles
         function group_data(data) {
-          var chartData =  Object.keys(data).map(function (key) {
+          return Object.keys(data).map(function (key) {
             return {
               name: key, // name of the bubble
               value: data[key], // value of the bubble
@@ -62,7 +59,6 @@ var bubbleGraph = view1Ctrl.directive(
               radius: radiusScale(data[key]) // radius of the bubble
             };
           });
-          return chartData;
         }
 
         
@@ -70,16 +66,16 @@ var bubbleGraph = view1Ctrl.directive(
         // Treemap changes the centers variable in place and adds x and y coordinates
         function getCenters(size, centers) {
           var map = d3.layout.treemap()
-            .size(size).ratio(1/1)
+            .size(size).ratio(1)
             .sort(null)
             .nodes({children: centers}); 
           return centers;
         }
 
         // draws the bubbles and centers on the screen, and starts the animation
-        function draw(varname) {
+        function draw(varName) {
           centers = getCenters([width, height], centers);
-          force.on("tick", tick(centers, varname));
+          force.on("tick", tick(centers, varName));
           labels(centers);
           force.start(); // starts force animation
           scope.$parent.data = data; // update data
@@ -269,7 +265,7 @@ var bubbleGraph = view1Ctrl.directive(
               d.category = center.name;
               d.colour = center.colour;
               return d;
-            }).style('fill', function(d) { return center.colour; });
+            }).style('fill', function() { return center.colour; });
           }
           startForce();
         }
@@ -294,7 +290,7 @@ var bubbleGraph = view1Ctrl.directive(
             removeStandardColour();
           } else if (newVal == 0) { // categorized to not categorized
             addStandardColour();
-          } else if (diff > 0) { // when number of categories descreases
+          } else if (diff > 0) { // when number of categories decreases
             removeSpecificColours(diff);
           }
 
@@ -304,7 +300,7 @@ var bubbleGraph = view1Ctrl.directive(
         // removes click listener for bubbles
         scope.$on('remove_listener', function() {
           removeListener();
-        })
+        });
 
         // adds click listener to bubbles, allows them to move to specific category
         scope.$on('add_listener', function(event, tile) {
@@ -323,4 +319,4 @@ var bubbleGraph = view1Ctrl.directive(
       });
     }
   };
-}])
+}]);

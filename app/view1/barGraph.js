@@ -2,7 +2,7 @@ Array.prototype.last = function() {
   return this[this.length - 1];
 };
 
-var barGraph = view1Ctrl.directive('barGraph', ['d3Service', 'columnDataService', function(d3Service, dataSvc) {
+view1Ctrl.directive('barGraph', ['d3Service', function(d3Service) {
   function groupData2(histogram, binRange, numBins) {
     var binSize = Math.round(histogram.length/numBins);
     var chartData = [];
@@ -61,8 +61,10 @@ var barGraph = view1Ctrl.directive('barGraph', ['d3Service', 'columnDataService'
         var options = {
           width: 1000,      height: 400,       margin_top: 20, 
           margin_right: 40, margin_bottom: 30, margin_left: 40
-        }
-
+        };
+        // set the width and height based on options given
+        var width  = options.width  - options.margin_left - options.margin_right,
+            height = options.height - options.margin_top  - options.margin_bottom;
         var selector = '.chart_'+scope.column.name;
         var selectorHist = selector + '_histogram';
 
@@ -85,10 +87,6 @@ var barGraph = view1Ctrl.directive('barGraph', ['d3Service', 'columnDataService'
         var threshold = chartData.map(function(d) { return d.x; });
         threshold.push(scope.column.binRange.last()); // add last item to threshold
 
-        // set the width and height based off options given
-        var width  = options.width  - options.margin_left - options.margin_right,
-            height = options.height - options.margin_top  - options.margin_bottom;
-
         // create linear scale
         var xLinear = d3.scale.linear()
           .range([0, width])
@@ -106,9 +104,10 @@ var barGraph = view1Ctrl.directive('barGraph', ['d3Service', 'columnDataService'
         });
 
         var currentData; // value to store either chartData or chartDataLinear
-        var currentX;
+        var currentX; // value to store either xLinear or xQuantile
         var currentXAxis; // value to store either xLinear or xOrdinal
 
+        // sets the x axis scale and the currentData depending on scope.linearScale
         function changeScale(isLinear) {
           switch(isLinear) {
             case true:
@@ -140,7 +139,7 @@ var barGraph = view1Ctrl.directive('barGraph', ['d3Service', 'columnDataService'
         }
 
         // creates bar graph and tooltip
-        function createBarGraph(isLinear) {
+        function createBarGraph() {
           var y = d3.scale.linear()
             .range([height, 0])
             .domain([0, d3.max(currentData, function(d) { return d.value; })]);
@@ -161,7 +160,7 @@ var barGraph = view1Ctrl.directive('barGraph', ['d3Service', 'columnDataService'
           removeBarGraph();
           removeDraggableLines();
 
-          var bar = chart.selectAll('g')
+          chart.selectAll('g')
             .data(currentData)
               .enter().append('rect')
             .attr('y', height)
@@ -203,6 +202,7 @@ var barGraph = view1Ctrl.directive('barGraph', ['d3Service', 'columnDataService'
         function createHistogramFromRange(range, dataSet) {
           var histogramData = [];
           var counter = 0;
+          var zeroCounter = 0; // keeps track of bins that are empty
           var previous = dataSet[0].x;
           // loop through dataSet, and add it to the bins in histogramData
           for (var i=0, j=0; i<dataSet.length; i++) {
@@ -264,13 +264,11 @@ var barGraph = view1Ctrl.directive('barGraph', ['d3Service', 'columnDataService'
                       "<div>Total Count: " + d.value + "</div>";
             });
 
-          var barWidth = width / currentData.length;
-
           d3.select(selectorHist)
             .attr('width', options.width)
             .attr('height', options.height);
 
-          var bars = histogramChart.selectAll('rect')
+          histogramChart.selectAll('rect')
             .data(binThresholds).enter()
             .insert('g', ':first-child')
               .attr('class', 'bin-bar')
@@ -362,6 +360,16 @@ var barGraph = view1Ctrl.directive('barGraph', ['d3Service', 'columnDataService'
             .attr("cursor", "ew-resize")
             .call(drag);
 
+          /*
+          A line can only move in between the left and right lines beside it. Not only that, but the smallest increment
+          that it can move is the discrete values (the bin width) in the graph above it. This function calculates the
+          boundaries, as well as the smallest increments of movement.
+           */
+          function calculateBound(elem) {
+            var positionSnap = Math.round(d3.event.x/barWidth)*barWidth;
+            return Math.max(leftBound(elem), Math.min(rightBound(elem), positionSnap));
+          }
+
           function leftBound(elem) {
             var prevElem = $(elem).parent().next();
             var d = d3.selectAll(prevElem).data()[0];
@@ -374,22 +382,14 @@ var barGraph = view1Ctrl.directive('barGraph', ['d3Service', 'columnDataService'
             return d ? d.x - barWidth : width - barWidth;
           }
 
-          function calculateBound(d, elem) {
-            var positionSnap = Math.round(d3.event.x/barWidth)*barWidth;
-            return Math.max(leftBound(elem), Math.min(rightBound(elem), positionSnap));
-          }
-
           // function to help with rounding issues caused by inverse mapping of quantile scale
           // assumes array is sorted
           function closestTo(arr, elem) {
             var lo = 0, hi = arr.length-1, mid;
             while (hi - lo > 1) {
-              var mid = Math.floor((hi+lo)/2);
-              if (arr[mid] < elem) {
-                lo = mid;
-              } else {
-                hi = mid;
-              }
+              mid = Math.floor((hi+lo)/2);
+              if (arr[mid] < elem) lo = mid; 
+              else hi = mid;
             } 
             if (elem - arr[lo] <= arr[hi] - elem) return arr[lo];
             else return arr[hi];
@@ -409,18 +409,25 @@ var barGraph = view1Ctrl.directive('barGraph', ['d3Service', 'columnDataService'
           function updateHistogram() {
             var data = chart.selectAll('.bin-limits .drag').data();
             var binThresholds = [currentData[0].x];
+            var keys;
+            /*
+            The data stored in the draggable lines is in terms of pixels relative to the left side of the svg element.
+            We need to somehow convert these pixel values to the actual bin thresholds. Luckily, we know the x scale
+            being used, and we can apply an inverse mapping to the pixel values. Think of it as this:
+            [Range (pixel values)] -> [Domain (bin thresholds)]
+            */
             if (scope.linearScale) {
-              var keys = currentData.map(function(d) { return d.x; });
+              keys = currentData.map(function(d) { return d.x; });
               data.forEach(function(d) {
-                binThresholds.push(closestTo(keys, currentX.invert(d.x)));
+                binThresholds.push(closestTo(keys, currentX.invert(d.x))); // inverse mapping
               });
-              binThresholds.push(currentData.last().x+currentData.last().dx);
+              binThresholds.push(currentData.last().x+currentData.last().dx); // push last element
             } else {
-              var keys = currentX.range();
+              keys = currentX.range();
               data.forEach(function(d) {
-                binThresholds.push(reverseQuantile[currentX.invertExtent(closestTo(keys,d.x))]);
+                binThresholds.push(reverseQuantile[currentX.invertExtent(closestTo(keys,d.x))]); // inverse mapping
               });
-              binThresholds.push(currentX.domain().last());
+              binThresholds.push(currentX.domain().last()); // push last element
             }
             var binThresholdsSorted = binThresholds.sort(function(a, b){return a-b});
             var histogramData = createHistogramFromRange(binThresholdsSorted, currentData);
@@ -434,7 +441,7 @@ var barGraph = view1Ctrl.directive('barGraph', ['d3Service', 'columnDataService'
         }
 
         // initializes the bar graph, and sets the current scale as linear
-        scope.$watch('column', function(column) {
+        scope.$watch('column', function() {
           changeScale(scope.linearScale); // scope.linearScale comes from parent
           createBarGraph(scope.linearScale);
         });
@@ -470,4 +477,4 @@ var barGraph = view1Ctrl.directive('barGraph', ['d3Service', 'columnDataService'
       });
     }
   };
-}])
+}]);

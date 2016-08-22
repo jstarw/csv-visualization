@@ -36,7 +36,6 @@ angular.module('services', [])
   // Service to facilitate the data used thoughout the application
   .factory('columnDataService', ['$rootScope', function($rootScope) {
     var columnData = {}; // private variable to store raw data from the JSON file
-    var outputData = {}; // private variable to store the final JSON output
     var preferencesData = {}; // private variable to store the user preferences for each column
 
     function getColumnData() {

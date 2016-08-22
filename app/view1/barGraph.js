@@ -6,7 +6,7 @@ view1Ctrl.directive('barGraph', ['d3Service', function(d3Service) {
   return {
     restrict: 'EA',
     scope: true,
-    template: '<svg class="chart_{{column.name}} chart" layout></svg><svg class="chart_{{column.name}}_histogram chart" layout></svg>',
+    template: '<svg class="chart_{{column.name}}_bar chart" layout></svg><svg class="chart_{{column.name}}_histogram chart" layout></svg>',
     link: function(scope, element, attrs) {
       d3Service.d3().then(function(d3) {
 
@@ -17,8 +17,8 @@ view1Ctrl.directive('barGraph', ['d3Service', function(d3Service) {
         // set the width and height based on options given
         var width  = options.width  - options.margin_left - options.margin_right,
             height = options.height - options.margin_top  - options.margin_bottom;
-        var selector = '.chart_'+scope.column.name;
-        var selectorHist = selector + '_histogram';
+        var selector = '.chart_' + scope.column.name + '_bar';
+        var selectorHist = '.chart_' + scope.column.name + '_histogram';
 
         var chart = d3.select(selector)
           .attr('width', options.width)
@@ -34,6 +34,7 @@ view1Ctrl.directive('barGraph', ['d3Service', function(d3Service) {
 
         var groupedData = groupHistogramData(scope.column.hist, scope.column.binRange);
         var chartData =  createHistogramFromRange(createEvenlyDistributedRange(100, groupedData), groupedData);
+
         var chartDataLinear = groupHistogramData(scope.column.histLinear, scope.column.binRangeLinear);
         var threshold = chartData.map(function(d) { return d.x; });
         threshold.push(scope.column.binRange.last()); // add last item to threshold

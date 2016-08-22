@@ -4,7 +4,7 @@ view1Ctrl.directive(
   return {
     restrict: 'EA',
     scope: true,
-    template: '<svg class="chart_{{column.name}} chart" layout></svg>',
+    template: '<svg class="chart_{{column.name}}_bubble chart" layout></svg>',
     link: function(scope, element, attrs) {
       d3Service.d3().then(function(d3) {
 
@@ -20,7 +20,7 @@ view1Ctrl.directive(
         // variables for svg element
         var width  = options.width,
             height = options.height,
-            selector = '.chart_'+scope.column.name,
+            selector = '.chart_' + scope.column.name + '_bubble',
             color = d3.scale.category20c();
 
         var chart = d3.select(selector)

@@ -40,19 +40,34 @@
 
     <md-content flex layout-padding>
       <div layout="column" layout-fill layout-align="top center">
-        <div layout="row" ng-repeat="column in columns" ng-cloak>
-          <view-bar 
-              layout="column"
-              ng-if="column.dataType!='categorical'"
-              ng-show="whichActive==column.name"
-              column='column'>
-          </view-bar>
-          <view-bubble 
-              layout="column"
-              ng-if="column.dataType=='categorical'"
-              ng-show="whichActive==column.name"
-              column='column'>
-          </view-bubble>
+        <div layout="row" ng-repeat="column in columns" ng-cloak ng-show="whichActive==column.name">
+          <md-whiteframe class="md-whiteframe-1dp" flex-sm="100" flex-gt-sm="100" flex-gt-md="100" ng-cloak>
+            <md-toolbar>
+              <div class="md-toolbar-tools">
+                <h2>Column: {{column.name}}</h2>
+              </div>
+            </md-toolbar>
+            <md-list ng-if="column.treatAs == 'both'">
+              <md-list-item>
+                <p>Should this column be treated as discrete or continuous</p>
+                <md-switch class="md-secondary" ng-model="column.continuous">
+                  {{column.continuous}}
+                </md-switch>
+              </md-list-item>
+              <md-divider></md-divider>
+            </md-list>
+
+            <view-bar 
+                layout="column"
+                ng-if="column.treatAs=='continuous' || column.continuous"
+                column='column'>
+            </view-bar>
+            <view-bubble 
+                layout="column"
+                ng-if="column.treatAs=='discrete' || column.continuous==false"
+                column='column'>
+            </view-bubble>
+          </md-whiteframe>
         </div>
       </div>
       <div flex></div>
@@ -60,7 +75,7 @@
 
     <md-sidenav class="md-sidenav-right md-whiteframe-4dp" md-component-id="right">
       <md-toolbar class="md-theme-light">
-        <h1 class="md-toolbar-tools">Submit </h1>
+        <h1 class="md-toolbar-tools">Submit</h1>
       </md-toolbar>
       <md-content ng-controller="RightCtrl" layout-padding>
         <form>

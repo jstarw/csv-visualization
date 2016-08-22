@@ -13,18 +13,18 @@ var view1Ctrl = view1.controller(
   'View1Ctrl', ['$scope', '$timeout', '$mdSidenav', '$mdDialog', '$log', '$http', 'columnDataService',
   function ($scope, $timeout, $mdSidenav, $mdDialog, $log, $http, dataSvc) {
 
-  $http.get('data/small2.json').then(parseData); // GET request
+  $http.get('data/test2.json').then(parseData); // GET request
   $scope.toggleLeft = buildDelayedToggler('left');
   $scope.toggleRight = buildToggler('right');
   $scope.outputData = {}; // JSON Object to be sent with the POST request
 
   $scope.isOpenRight = function(){
     return $mdSidenav('right').isOpen();
-  }
+  };
 
   $scope.switchView = function(columnName) {
     $scope.whichActive = columnName;
-  }
+  };
 
   $scope.submit = function() {
     // get the user preferences from the data service and send through a POST request
@@ -34,7 +34,7 @@ var view1Ctrl = view1.controller(
       return preferences[key];
     });
     sendPOSTRequest();
-  }
+  };
 
   function sendPOSTRequest() {
     validateData($scope.outputData);
@@ -51,6 +51,12 @@ var view1Ctrl = view1.controller(
   function parseData(res) {
     dataSvc.setColumnData(res.data);
     $scope.columns = dataSvc.getColumnData().columns;
+    // add continuous attribute for numeric columns
+    $scope.columns.filter(function(column) {
+      return column.treatAs == 'both';
+    }).forEach(function(column) {
+      column.continuous = false;
+    });
     $scope.whichActive = $scope.columns[0].name;
     $scope.outputData.numberOfColumns = dataSvc.getColumnData().numberOfColumns;
     $scope.outputData.dataSize = dataSvc.getColumnData().dataSize;
@@ -75,7 +81,7 @@ var view1Ctrl = view1.controller(
         .ok('Got it!')
         // .targetEvent(ev)
     );
-  };
+  }
   /**
    * Supplies a function that will continue to operate until the
    * time is up.
